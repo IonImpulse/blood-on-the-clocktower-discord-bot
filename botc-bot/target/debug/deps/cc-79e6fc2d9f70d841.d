@@ -1,0 +1,12 @@
+C:\Users\ionim\Documents\GitHub\blood-on-the-clocktower-discord-bot\botc-bot\target\debug\deps\cc-79e6fc2d9f70d841.rmeta: C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\lib.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\registry.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\winapi.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\com.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\setup_config.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\windows_registry.rs
+
+C:\Users\ionim\Documents\GitHub\blood-on-the-clocktower-discord-bot\botc-bot\target\debug\deps\libcc-79e6fc2d9f70d841.rlib: C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\lib.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\registry.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\winapi.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\com.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\setup_config.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\windows_registry.rs
+
+C:\Users\ionim\Documents\GitHub\blood-on-the-clocktower-discord-bot\botc-bot\target\debug\deps\cc-79e6fc2d9f70d841.d: C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\lib.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\registry.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\winapi.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\com.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\setup_config.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\windows_registry.rs
+
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\lib.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\registry.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\winapi.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\com.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\setup_config.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\cc-1.0.66\src\windows_registry.rs:

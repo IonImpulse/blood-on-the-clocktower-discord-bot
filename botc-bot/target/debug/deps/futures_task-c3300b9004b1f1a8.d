@@ -1,0 +1,11 @@
+c:\Users\ionim\Documents\GitHub\blood-on-the-clocktower-discord-bot\botc-bot\target\debug\deps\futures_task-c3300b9004b1f1a8.rmeta: C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\lib.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\spawn.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\future_obj.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\noop_waker.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\arc_wake.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\waker.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\waker_ref.rs
+
+c:\Users\ionim\Documents\GitHub\blood-on-the-clocktower-discord-bot\botc-bot\target\debug\deps\futures_task-c3300b9004b1f1a8.d: C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\lib.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\spawn.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\future_obj.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\noop_waker.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\arc_wake.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\waker.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\waker_ref.rs
+
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\lib.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\spawn.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\future_obj.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\noop_waker.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\arc_wake.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\waker.rs:
+C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\futures-task-0.3.12\src\waker_ref.rs:
