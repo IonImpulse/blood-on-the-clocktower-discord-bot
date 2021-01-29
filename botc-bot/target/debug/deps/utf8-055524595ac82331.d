@@ -1,9 +1,0 @@
-C:\Users\ionim\Documents\GitHub\blood-on-the-clocktower-discord-bot\botc-bot\target\debug\deps\utf8-055524595ac82331.rmeta: C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\lib.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\lossy.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\read.rs
-
-C:\Users\ionim\Documents\GitHub\blood-on-the-clocktower-discord-bot\botc-bot\target\debug\deps\libutf8-055524595ac82331.rlib: C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\lib.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\lossy.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\read.rs
-
-C:\Users\ionim\Documents\GitHub\blood-on-the-clocktower-discord-bot\botc-bot\target\debug\deps\utf8-055524595ac82331.d: C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\lib.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\lossy.rs C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\read.rs
-
-C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\lib.rs:
-C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\lossy.rs:
-C:\Users\ionim\.cargo\registry\src\github.com-1ecc6299db9ec823\utf-8-0.7.5\src\read.rs:

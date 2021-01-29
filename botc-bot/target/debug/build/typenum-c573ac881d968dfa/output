@@ -1,2 +1,0 @@
-cargo:rustc-env=TYPENUM_BUILD_CONSTS=c:\Users\ionim\Documents\GitHub\blood-on-the-clocktower-discord-bot\botc-bot\target\debug\build\typenum-c573ac881d968dfa\out\consts.rs
-cargo:rustc-env=TYPENUM_BUILD_OP=c:\Users\ionim\Documents\GitHub\blood-on-the-clocktower-discord-bot\botc-bot\target\debug\build\typenum-c573ac881d968dfa\out\op.rs
