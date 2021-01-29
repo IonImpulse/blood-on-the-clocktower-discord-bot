@@ -92,6 +92,7 @@ name = "botc-bot"
 version = "0.1.0"
 dependencies = [
  "serenity",
+ "tokio",
 ]
 
 [[package]]
