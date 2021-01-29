@@ -7,4 +7,4 @@ If you're interested in *how to use it*, simply continue reading.
 
 ## How to Use
 ### 1: Invite
-Use this link [TODO] to invite Blood 🩸 to your server!
+Use this [link](https://discord.com/oauth2/authorize?&client_id=804522025946578974&scope=bot&permissions=17034304) to invite Blood 🩸 to your server!
