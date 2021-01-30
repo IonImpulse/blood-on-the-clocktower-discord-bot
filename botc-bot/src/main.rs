@@ -224,7 +224,7 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
     
             let channel_id: &u64 = msg.channel_id.as_u64();
     
-            print_status(&format!("Setting up new server with id [ {} ]", guild_id));
+            print_status(&format!("Setting up new server with id [{}]", guild_id));
     
             let content = String::from("**New game has been created!** Now bound to this channel...");
             
@@ -242,7 +242,7 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
             drop(lock);
             // Unlock main database
     
-            print_info(&format!("Database now has {} Guilds", num_servers));
+            print_info(&format!("There are {} active games", num_servers));
             
         } else {
             print_error("Could not retrieve Guild ID (Command from a DM?)");
@@ -255,9 +255,32 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 async fn end(ctx: &Context, msg: &Message) -> CommandResult {
     if is_storyteller(&ctx, &msg).await {
-        let content = String::from("Ended game, GG!");
+		print_command(&ctx, &msg);
+
+        let is_guild: bool = msg.guild_id.as_ref().is_some();
+          
+        if is_guild {
+            let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
+      
+            let content = String::from("**Ended game!**");
+			send_msg(&msg, &ctx, content).await;
+
+            // Start accesssing main database with lock
+            let mut lock = BLOOD_DATABASE.lock().unwrap();
+                
+            lock.blood_guilds.remove(&guild_id);
             
-        send_msg(&msg, &ctx, content).await;
-    }
+            let num_servers = lock.blood_guilds.len();
+
+            drop(lock);
+            // Unlock main database
+
+			print_info(&format!("There are {} active games", num_servers));
+
+		} else {
+            print_error("Could not retrieve Guild ID (Command from a DM?)");
+        }
+	}
+	
     Ok(())
 }

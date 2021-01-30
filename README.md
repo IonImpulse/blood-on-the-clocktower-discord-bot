@@ -60,4 +60,4 @@ Go back to the Discord Developer Portal and click on **OAuth2** on the left hand
 ### 5: Run the bot
 Double-click the downloaded release file or run the compiled Rust file to run the bot. It should be as easy as that!
 
-#🩸🔛🕒🗼
+# 🩸🔛🕒🗼
