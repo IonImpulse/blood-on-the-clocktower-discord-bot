@@ -185,6 +185,9 @@ lazy_static! {
 
 #[tokio::main]
 async fn main() {
+    println!("=======================================");
+    println!("");
+
     print_info("Starting up...");
     
     // Setup the async hashmap to store BloodGuild structs
