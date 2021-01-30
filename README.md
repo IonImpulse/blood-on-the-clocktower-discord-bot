@@ -44,3 +44,20 @@ Now you can send the following commands without a prefix in that channel to cont
 >Saves the ordering of people in night rooms without moving them.
 
 Then, use the command **~end** to end the game. This will clear all data, including which channel is bound, which roles players have, and how many nights have passed.
+
+
+## How to host
+### 1: Download Blood 🩸
+Go to the releases page and grab the latest version for your OS, or if you're fancy, you can clone the git repository and compile it using Rust yourself.
+### 2: Create a bot
+To to this [link](https://discord.com/developers/applications) and login with your Discord account. Click **New Application** and setup a name and icon, maybe just something like *Blood on the Clocktower* with the icon in this repo. Next, go to the **Bot** tab at the left hand side and click **Create a Bot**. Name it whatever you want (or just *Blood*), and give it an icon. Once that's all saved, click **copy** under the *Token*.
+### 3: Set your token
+Run this command on Windows to set your token: `[System.Environment]::SetEnvironmentVariable('BLOOD_TOKEN','ENTER YOUR TOKEN HERE')`
+
+Make sure to replace **ENTER YOUR TOKEN HERE** with the copied token.
+### 4: Invite your bot
+Go back to the Discord Developer Portal and click on **OAuth2** on the left hand side of your application. In the **Scopes** section, click *Bot*. Copy the URL that appears and paste it into a browser. **Make sure to replace the** `permissions=0` **part of the URL with** `permissions=17034304`. Once done, you can press Enter to navigate to the webpage and select the server you want to invite the bot to. Make sure to bookmark this so you can invite your bot again. If you don't, you'll need to do this step again.
+### 5: Run the bot
+Double-click the downloaded release file or run the compiled Rust file to run the bot. It should be as easy as that!
+
+#🩸🔛🕒🗼

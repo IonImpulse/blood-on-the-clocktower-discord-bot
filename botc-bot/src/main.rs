@@ -55,6 +55,7 @@ async fn is_storyteller(ctx: &Context, msg: &Message) -> bool {
 
     return storyteller;
 }
+
 #[async_trait]
 impl EventHandler for Handler {
     async fn ready(&self, _: Context, ready: Ready) {
@@ -144,8 +145,6 @@ pub struct BloodGuild {
     id: u64,
     game_state: GameState,
     storyteller_channel: u64,
-    auto_dm: bool,
-    auto_move: bool,
 }
 
 // Global HashMap struct to hold all global data
@@ -160,8 +159,6 @@ impl BloodGuild {
             id: id,
             game_state: GameState::SettingUp,
             storyteller_channel: storyteller_channel,
-            auto_dm: true,
-            auto_move: true,
         }
     }
 }
@@ -198,7 +195,9 @@ async fn main() {
         .group(&GENERAL_GROUP);
 
     // Login with a bot token from the environment
-    let token = env::var("BLOOD_TOKEN").expect("token");
+    let token = env::var("BLOOD_TOKEN")
+    .expect("Please set your BLOOD_TOKEN! Follow instructions at https://github.com/IonImpulse/blood-on-the-clocktower-discord-bot!");
+    
     let mut client = Client::builder(token)
         .event_handler(Handler)
         .framework(framework)
