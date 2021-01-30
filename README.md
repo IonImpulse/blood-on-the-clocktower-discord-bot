@@ -29,18 +29,18 @@ Blood 🩸 will be bound to the channel that **~start** was executed in, so for 
 Now you can send the following commands without a prefix in that channel to continue the flow of the game:
 
 ### roles
-    Starts a call/response to save the role of every player in the Voice Channel who is not the storyteller. Once done, will respond with a complete list of all **player/role** pairs, and will ask to either save, save and auto-DM, edit, or discard.
+>Starts a call/response to save the role of every player in the Voice Channel who is not the storyteller. Once done, will respond with a complete list of all **player/role** pairs, and will ask to either save, save and auto-DM, edit, or discard.
 
 ### dm roles
-    Will DM all saved roles to each player. If there are no roles set for the session, this command will fail. If there are some players who have roles and some who don't, this command will fail, but can be overridden by specifying **"dm roles force"** 
+>Will DM all saved roles to each player. If there are no roles set for the session, this command will fail. If there are some players who have roles and some who don't, this command will fail, but can be overridden by specifying **"dm roles force"** 
 
 ### night
-    Moves everyone *but* the storyteller who executed the command (who is also in the Voice Channel the storyteller is in) to a night room. If there is a saved ordering of people, it will use that order.
+>Moves everyone *but* the storyteller who executed the command (who is also in the Voice Channel the storyteller is in) to a night room. If there is a saved ordering of people, it will use that order.
 
 ### day
-    Saves the ordering of people in night rooms and moves everyone to the Voice Channel that the storyteller who executed the command is in.
+>Saves the ordering of people in night rooms and moves everyone to the Voice Channel that the storyteller who executed the command is in.
 
 ### save order
-    Saves the ordering of people in night rooms without moving them.
+>Saves the ordering of people in night rooms without moving them.
 
 Then, use the command **~end** to end the game. This will clear all data, including which channel is bound, which roles players have, and how many nights have passed.
