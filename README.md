@@ -24,7 +24,7 @@ Use the command **~start** to start a game.
 
 Blood 🩸 will be bound to the channel that **~start** was executed in, so for the duration of the game, you won't need to use the **~** prefix to execute commands.
 
-#### Ex: You, with a "Storytellers" role, send the message "~start" in a channel that only storytellers can see. Blood will respond with a confirmation, and will now respond to commands in that channel without needing to use the prefix **~**.
+#### Ex: You, with a "Storytellers" role, send the message "\~start" in a channel that only storytellers can see. Blood will respond with a confirmation, and will now respond to commands in that channel without needing to use the prefix **\~**.
 
 Now you can send the following commands without a prefix in that channel to continue the flow of the game:
 
