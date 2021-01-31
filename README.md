@@ -40,7 +40,7 @@ Now you can send the following commands without a prefix in that channel to cont
 ### day
 >Saves the ordering of people in night rooms and moves everyone to the Voice Channel that the storyteller who executed the command is in.
 
-### save order
+### save
 >Saves the ordering of people in night rooms without moving them.
 
 Then, use the command **~end** to end the game. This will clear all data, including which channel is bound, which roles players have, and how many nights have passed.

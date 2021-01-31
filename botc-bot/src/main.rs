@@ -1,4 +1,6 @@
 use tokio;
+use tokio::sync::Mutex;
+
 use lazy_static::lazy_static;
 
 use serenity::client::{Client, Context, EventHandler};
@@ -13,17 +15,18 @@ use serenity::framework::standard::{
     }
 };
 
-use std::{
-    collections::*,
-    env,
-    sync::{Arc, Mutex},
-};
 use serenity::{
     async_trait,
     client::bridge::gateway::ShardManager,
     http::Http,
     model::{event::ResumedEvent, gateway::Ready, id::RoleId},
     prelude::*,
+};
+
+use std::{
+    collections::*,
+    env,
+    sync::Arc,
 };
 
 use colored::*;
@@ -67,17 +70,60 @@ impl EventHandler for Handler {
     }
 
     async fn message(&self, ctx: Context, msg: Message) {
+        // First, check to see if the message is a command. If it's not, discard
         if !msg.content.starts_with("~") {
+
+            // Next, check if this was a message in a guild or not
             let message_in_guild: bool = msg.member.as_ref().is_some();
 
             if message_in_guild {
                 
+                // Next, check if this sent by a storyteller, as only they can use commands
                 if is_storyteller(&ctx, &msg).await {
+
+                    // Print the message to console
                     print_echo(&msg);
+
+                    // Get guild ID
+                    let current_guild_id = msg.guild_id.as_ref().unwrap().as_u64();
+
+                    // Create a variable to hold the current state of everything to check against
+                    let state = BLOOD_DATABASE.lock().await;                
+
+                    // Has this game been setup before? If it hasn't, ignore it.
+                    if state.blood_guilds.contains_key(current_guild_id) {
+                        
+                        // Get channel ID
+                        let current_channel_id = msg.channel_id.as_u64();
+
+                        // Was this sent in the correct channel? If it hasn't, ignore it
+                        if &state.blood_guilds[current_guild_id].storyteller_channel == current_channel_id {
+
+                            // Check if in the middle of setting roles
+                            let mut is_rolling = false;
+
+                            match state.blood_guilds[current_guild_id].game_state {
+                                GameState::SettingRoles => is_rolling = true,
+                                _ =>  is_rolling = false,
+                            }
+
+                            drop(state);
+
+                            if is_rolling == false {
+                                match msg.content.as_str() {
+                                    "roles" => roles(&ctx, &msg).await,
+                                    "dm roles" => dm_roles(&ctx, &msg).await,
+                                    "night" => night(&ctx, &msg).await,
+                                    "day" => day(&ctx, &msg).await,
+                                    "save" => save(&ctx, &msg).await,
+                                    _ => nothing(&ctx, &msg).await
+                                }
+                            }
+                        }
+                    }
                 }
             }
         }
-        
     }
 }
 
@@ -138,6 +184,7 @@ async fn send_msg(msg: &Message, ctx: &Context, content: String) {
 pub enum GameState {
     Nothing,
     SettingUp,
+    SettingRoles,
     Playing
 }
 
@@ -145,6 +192,7 @@ pub struct BloodGuild {
     id: u64,
     game_state: GameState,
     storyteller_channel: u64,
+    roles: HashMap<u64,String>,
 }
 
 // Global HashMap struct to hold all global data
@@ -159,6 +207,7 @@ impl BloodGuild {
             id: id,
             game_state: GameState::SettingUp,
             storyteller_channel: storyteller_channel,
+            roles: HashMap::new(),
         }
     }
 }
@@ -229,11 +278,15 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
             let content = String::from("**New game has been created!** Now bound to this channel...");
             
             send_msg(&msg, &ctx, content).await;
+
+            let content = String::from("**Type \"Roles\" to start assigning roles once everyone is in voice chat!**");
+            
+            send_msg(&msg, &ctx, content).await;
     
             let temp_server = BloodGuild::new(*guild_id, *channel_id);
             
             // Start accesssing main database with lock
-            let mut lock = BLOOD_DATABASE.lock().unwrap();
+            let mut lock = BLOOD_DATABASE.lock().await;
             
             lock.blood_guilds.insert(*guild_id, temp_server);
             
@@ -266,7 +319,7 @@ async fn end(ctx: &Context, msg: &Message) -> CommandResult {
 			send_msg(&msg, &ctx, content).await;
 
             // Start accesssing main database with lock
-            let mut lock = BLOOD_DATABASE.lock().unwrap();
+            let mut lock = BLOOD_DATABASE.lock().await;
                 
             lock.blood_guilds.remove(&guild_id);
             
@@ -283,4 +336,30 @@ async fn end(ctx: &Context, msg: &Message) -> CommandResult {
 	}
 	
     Ok(())
+}
+
+async fn roles(ctx: &Context, msg: &Message) {
+    
+}
+
+async fn dm_roles(ctx: &Context, msg: &Message) {
+    
+}
+
+async fn night(ctx: &Context, msg: &Message) {
+    
+}
+
+async fn day(ctx: &Context, msg: &Message) {
+    
+}
+
+async fn save(ctx: &Context, msg: &Message) {
+    
+}
+
+
+async fn nothing(ctx: &Context, msg: &Message) {
+    let content = String::from("Command not found. Please try again!");
+	send_msg(&msg, &ctx, content).await;
 }
