@@ -285,7 +285,7 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
             
             send_msg(&msg, &ctx, content).await;
 
-            let content = String::from("**Type \"Roles\" to start assigning roles once everyone is in voice chat!**");
+            let content = String::from("**Type \"roles\" to start assigning roles once everyone is in voice chat!**");
             
             send_msg(&msg, &ctx, content).await;
     
@@ -344,6 +344,10 @@ async fn end(ctx: &Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 
+#[command]
+async fn help(ctx: &Context, msg: &Message) -> CommandResult {
+    Ok(())
+}
 async fn roles(ctx: &Context, msg: &Message) {
     print_command(&ctx, &msg);
 
@@ -460,7 +464,7 @@ async fn nothing(ctx: &Context, msg: &Message) {
 
 // Helper functions
 
-async fn ask_for_role(ctx: &Context, msg: &Message, current_state: BloodGuild) {
+async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuild) {
     let mut sent_request = false;
 
     for user_tuple in current_state.roles.clone() {
@@ -473,7 +477,7 @@ async fn ask_for_role(ctx: &Context, msg: &Message, current_state: BloodGuild) {
                 user_name = value.clone();
             }
             
-            send_msg(&msg, &ctx, String::from(format!("**Enter role for {}:**", user_name))).await;
+            send_msg(&msg, &ctx, String::from(format!("**Enter role** for *{}*", user_name))).await;
 
             break;
         }
@@ -481,13 +485,15 @@ async fn ask_for_role(ctx: &Context, msg: &Message, current_state: BloodGuild) {
 
     if sent_request == false {
         send_msg(&msg, &ctx, String::from("All roles assigned! Ready to start the game...")).await;
-    } else {
-        // Start accesssing main database with lock
-        let mut lock = BLOOD_DATABASE.lock().await;
-                    
-        lock.blood_guilds.insert(current_state.id, current_state);
-
-        drop(lock);
-        // Unlock main database
+        
+        current_state.game_state = GameState::SettingUp;
     }
+
+    // Start accesssing main database with lock
+    let mut lock = BLOOD_DATABASE.lock().await;
+                    
+    lock.blood_guilds.insert(current_state.id, current_state);
+
+    drop(lock);
+    // Unlock main database
 }
