@@ -4,8 +4,9 @@ use tokio::sync::Mutex;
 use lazy_static::lazy_static;
 
 use serenity::client::{Client, Context, EventHandler};
-use serenity::model::channel::Message;
+use serenity::model::channel::*;
 use serenity::model::guild::*;
+use serenity::model::id::*;
 use serenity::framework::standard::{
     StandardFramework,
     CommandResult,
@@ -100,7 +101,7 @@ impl EventHandler for Handler {
                         if &state.blood_guilds[current_guild_id].storyteller_channel == current_channel_id {
 
                             // Check if in the middle of setting roles
-                            let mut is_rolling = false;
+                            let is_rolling;
 
                             match state.blood_guilds[current_guild_id].game_state {
                                 GameState::SettingRoles => is_rolling = true,
@@ -109,7 +110,9 @@ impl EventHandler for Handler {
 
                             drop(state);
 
-                            if is_rolling == false {
+                            if is_rolling {
+                                roles(&ctx, &msg).await;
+                            } else {
                                 match msg.content.as_str() {
                                     "roles" => roles(&ctx, &msg).await,
                                     "dm roles" => dm_roles(&ctx, &msg).await,
@@ -181,6 +184,7 @@ async fn send_msg(msg: &Message, ctx: &Context, content: String) {
 // track of the game as it goes on, and is saved to a shared async
 // dictionary at each GameState change
 
+#[derive(Copy, Clone)]
 pub enum GameState {
     Nothing,
     SettingUp,
@@ -188,14 +192,16 @@ pub enum GameState {
     Playing
 }
 
+#[derive(Clone)]
 pub struct BloodGuild {
     id: u64,
     game_state: GameState,
     storyteller_channel: u64,
-    roles: HashMap<u64,String>,
+    roles: Vec<(u64,Member,String)>,
 }
 
 // Global HashMap struct to hold all global data
+#[derive(Clone)]
 pub struct GlobalBloodState {
     blood_guilds: HashMap<u64, BloodGuild>,
 }
@@ -207,7 +213,7 @@ impl BloodGuild {
             id: id,
             game_state: GameState::SettingUp,
             storyteller_channel: storyteller_channel,
-            roles: HashMap::new(),
+            roles: Vec::new(),
         }
     }
 }
@@ -339,27 +345,149 @@ async fn end(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 async fn roles(ctx: &Context, msg: &Message) {
-    
+    print_command(&ctx, &msg);
+
+    let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
+
+    // Start accesssing main database with lock
+    let lock = BLOOD_DATABASE.lock().await;
+                
+    let mut current_state = lock.blood_guilds[guild_id].clone();
+
+    drop(lock);
+    // Unlock main database
+
+    // Set the game state 
+    current_state.game_state = GameState::SettingRoles;
+
+    let mut is_correct = false;
+
+    match current_state.game_state {
+        GameState::Nothing => send_msg(&msg, &ctx, String::from("Game not active!")).await,
+        GameState::Playing => send_msg(&msg, &ctx, String::from("Cannot edit roles in-game!")).await,
+        _ => is_correct = true
+    }
+
+    if is_correct {
+
+        // Check to see if this was called for the first time or is a continuation
+        if &msg.content == "roles" {
+            // If it hasn't, get all channels, check each one to see if it's
+            // a voice channel, and if it is a voice channel, see if the
+            // storyteller who sent the command is in it. If something fails,
+            // send an error message to the channel.
+
+            send_msg(&msg, &ctx, String::from("Getting members in your VC...")).await;
+
+            let all_channels = GuildId(guild_id.clone()).channels(&ctx.http).await.unwrap();
+            
+            let mut storyteller_voice_channel: Option<GuildChannel> = None;
+
+            let storyteller_id = msg.author.id;
+
+            for channel in all_channels {
+                if channel.1.kind == ChannelType::Voice {
+                    let temp_members = channel.1.members(&ctx.cache).await.unwrap();
+
+                    for member in temp_members {
+                        if member.user.id == storyteller_id {
+                            storyteller_voice_channel = Some(channel.1.clone());
+                        }
+                    }
+                }
+            }
+
+            if let Some(value) = storyteller_voice_channel {
+                let members_in_vc = value.members(&ctx.cache).await.unwrap();
+
+                for member in members_in_vc {
+                    if member.user.id != storyteller_id {
+                        current_state.roles.push((*member.user.id.as_u64(), member, String::from("none")));
+                    }
+                }
+
+                if current_state.roles.len() > 0 {
+                    send_msg(&msg, &ctx, String::from("**Done!** Please respond to the prompts for each member:")).await;
+
+                    ask_for_role(&ctx, &msg, current_state).await;
+                } else {
+                    send_msg(&msg, &ctx, String::from("**Error:** Could not find any other members in VC!")).await;
+                }
+            } else {
+                send_msg(&msg, &ctx, String::from("**Error:** Please join a voice channel!")).await;
+            }
+        } else {
+            // Was a continuation, so assign the role to the last blank user
+            for index in 0..current_state.roles.len() {
+                if current_state.roles[index].2 == String::from("none") {
+                    current_state.roles[index].2 = msg.content.clone();
+                    // Once user is found, break loop
+                    
+                    print_info(&format!("User {} is role {}", current_state.roles[index].1.user.name, current_state.roles[index].2));
+                    ask_for_role(&ctx, &msg, current_state).await;
+                    break;
+                }
+            } 
+        }
+
+         
+    }
+
 }
 
 async fn dm_roles(ctx: &Context, msg: &Message) {
-    
+    print_command(&ctx, &msg);
 }
 
 async fn night(ctx: &Context, msg: &Message) {
-    
+    print_command(&ctx, &msg);
 }
 
 async fn day(ctx: &Context, msg: &Message) {
-    
+    print_command(&ctx, &msg);
 }
 
 async fn save(ctx: &Context, msg: &Message) {
-    
+    print_command(&ctx, &msg);
 }
 
 
 async fn nothing(ctx: &Context, msg: &Message) {
     let content = String::from("Command not found. Please try again!");
 	send_msg(&msg, &ctx, content).await;
+}
+
+
+// Helper functions
+
+async fn ask_for_role(ctx: &Context, msg: &Message, current_state: BloodGuild) {
+    let mut sent_request = false;
+
+    for user_tuple in current_state.roles.clone() {
+        if user_tuple.2 == String::from("none") {
+            sent_request = true;
+
+            let mut user_name: String = String::from(&user_tuple.1.user.name);
+            
+            if let Some(value) = &user_tuple.1.nick {
+                user_name = value.clone();
+            }
+            
+            send_msg(&msg, &ctx, String::from(format!("**Enter role for {}:**", user_name))).await;
+
+            break;
+        }
+    }
+
+    if sent_request == false {
+        send_msg(&msg, &ctx, String::from("All roles assigned! Ready to start the game...")).await;
+    } else {
+        // Start accesssing main database with lock
+        let mut lock = BLOOD_DATABASE.lock().await;
+                    
+        lock.blood_guilds.insert(current_state.id, current_state);
+
+        drop(lock);
+        // Unlock main database
+    }
 }
