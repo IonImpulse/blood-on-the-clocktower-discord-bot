@@ -11,7 +11,7 @@ Use this [link](https://discord.com/oauth2/authorize?&client_id=8045220259465789
 ### 2: Setup your server
 This is an example of what your server should look like:
 
-![Example Discord Server]("\assets\Setup Photo.png")
+![Example Discord Server](https://github.com/IonImpulse/blood-on-the-clocktower-discord-bot/raw/main/assets/Setup%20Photo.png)
 
 Make sure that your storyteller has a role with the word "storyteller" in it, case insensitive. It does not need any permissions, it is just a way to differentiate who can control games and who shouldn't be moved at night/wakeup.
 
