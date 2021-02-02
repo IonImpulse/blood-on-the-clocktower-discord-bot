@@ -9,15 +9,19 @@ If you're interested in *how to use it*, simply continue reading.
 ### 1: Invite
 Use this [link](https://discord.com/oauth2/authorize?&client_id=804522025946578974&scope=bot&permissions=17034304) to invite Blood 🩸 to your server!
 ### 2: Setup your server
-Make sure that your storyteller(s) has a role with the word "storyteller" in it, case insensitive. It does not need any permissions, it is just a way to differentiate who can control games and who shouldn't be moved at night/wakeup.
+This is an example of what your server should look like:
 
-#### Ex: there are 10 people in a server, and two of them have a role named "Storytellers". They will be able to control the flow of the game, but no one else will.
+![Example Discord Server]("\assets\Setup Photo.png")
 
-Make sure that you have a Voice Channel category with the word "night" in it, case insensitive. There should also be enough channels in that category for each player.
+Make sure that your storyteller has a role with the word "storyteller" in it, case insensitive. It does not need any permissions, it is just a way to differentiate who can control games and who shouldn't be moved at night/wakeup.
 
-#### Ex: There are three Voice Channel catagories: "General", "Day", and "Night Rooms". The "Night Rooms" category has 20 voice channels with random names.
+#### Ex: there are 10 people in a server, and two of them have a role named "Storytellers". The one who uses the command "~start" will be able to control the flow of the game, but no one else will.
 
-Additionally, sure that there is a text channel that only the storytellers can access. This is where they will execute commands and where Blood 🩸 will respond.
+Make sure that you have a Voice Channel category with the word "night" in it, case insensitive. There should also be enough channels in that category for each player. Additionally, make sure that there is a Voice Channel *not* in the night category that has the word "town" in it, case insensitive.
+
+#### Ex: There are two Voice Channel catagories: "General" and "Night Rooms". The "Night Rooms" category has 20 voice channels with random names.
+
+Additionally, sure that there is a text channel that only the storyteller can access. This is where they will execute commands and where Blood 🩸 will respond.
 
 ### 3: Start a game
 Use the command **~start** to start a game.

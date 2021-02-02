@@ -163,7 +163,7 @@ fn print_echo(msg: &Message) {
     println!("{}    | {} : {}", "ECHO".blue().bold(), author_name.bold(), message.normal());
 }
 
-fn print_command(ctx: &Context, msg: &Message) {
+fn print_command(msg: &Message) {
     println!("{} | [{}] | {}#{}", "COMMAND".yellow().bold(), &msg.content.purple(), &msg.author.name, &msg.author.discriminator);
 }
 
@@ -198,6 +198,7 @@ pub struct BloodGuild {
     game_state: GameState,
     storyteller_channel: u64,
     roles: Vec<(u64,Member,String)>,
+    room_assignments: HashMap<u64,ChannelId>,
 }
 
 // Global HashMap struct to hold all global data
@@ -214,6 +215,7 @@ impl BloodGuild {
             game_state: GameState::SettingUp,
             storyteller_channel: storyteller_channel,
             roles: Vec::new(),
+            room_assignments: HashMap::new(),
         }
     }
 }
@@ -270,7 +272,7 @@ async fn main() {
 #[command]
 async fn start(ctx: &Context, msg: &Message) -> CommandResult {
     if is_storyteller(&ctx, &msg).await {
-        print_command(&ctx, &msg);
+        print_command(&msg);
 
         let is_guild: bool = msg.guild_id.as_ref().is_some();
         
@@ -314,7 +316,7 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 #[command]
 async fn end(ctx: &Context, msg: &Message) -> CommandResult {
     if is_storyteller(&ctx, &msg).await {
-		print_command(&ctx, &msg);
+		print_command(&msg);
 
         let is_guild: bool = msg.guild_id.as_ref().is_some();
           
@@ -349,7 +351,7 @@ async fn help(ctx: &Context, msg: &Message) -> CommandResult {
     Ok(())
 }
 async fn roles(ctx: &Context, msg: &Message) {
-    print_command(&ctx, &msg);
+    print_command(&msg);
 
     let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
 
@@ -440,19 +442,67 @@ async fn roles(ctx: &Context, msg: &Message) {
 }
 
 async fn dm_roles(ctx: &Context, msg: &Message) {
-    print_command(&ctx, &msg);
+    print_command(&msg);
+
+    let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
+
+    // Start accesssing main database with lock
+    let lock = BLOOD_DATABASE.lock().await;
+                
+    let mut current_state = lock.blood_guilds[guild_id].clone();
+
+    drop(lock);
+    // Unlock main database
+
+    if current_state.roles.len() > 0 {
+        let mut successful_dms: u32 = 0;
+
+        for member in &current_state.roles {
+            let message_to_send: String = format!("Your role this game is **{}**. Don't tell anyone!", &member.2);
+
+            let result = &member.1.user.direct_message(&ctx.http, |m| {m.content(&message_to_send)}).await;
+
+            match result {
+                Ok(_) => {
+                    successful_dms += 1;
+                },
+                Err(_why) => {
+                    print_error(&format!("Could not send message to {}", &member.1.user.name));
+
+                    send_msg(&msg, &ctx, String::from(format!("**Error:** could not send {} their role!", &member.1.user.name))).await;
+                },
+            };
+        }
+
+        send_msg(&msg, &ctx, String::from(format!("**Sent {} successful DMs!**", successful_dms))).await;
+
+    } else {
+        send_msg(&msg, &ctx, String::from("**Error:** No roles have been set!")).await;
+    }
+
+
+    // Once completed without errors, gamestate is set to playing
+    current_state.game_state = GameState::Playing;
+
+    // Start accesssing main database with lock
+    let mut lock = BLOOD_DATABASE.lock().await;
+                    
+    lock.blood_guilds.insert(current_state.id, current_state);
+
+    drop(lock);
+    // Unlock main database
 }
 
 async fn night(ctx: &Context, msg: &Message) {
-    print_command(&ctx, &msg);
+    print_command(&msg);
 }
 
 async fn day(ctx: &Context, msg: &Message) {
-    print_command(&ctx, &msg);
+    print_command(&msg);
 }
 
 async fn save(ctx: &Context, msg: &Message) {
-    print_command(&ctx, &msg);
+    print_command(&msg);
 }
 
 
