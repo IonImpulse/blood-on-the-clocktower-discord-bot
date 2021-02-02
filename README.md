@@ -42,7 +42,7 @@ Now you can send the following commands without a prefix in that channel to cont
 >Moves everyone *but* the storyteller who executed the command (who is also in the Voice Channel the storyteller is in) to a night room. If there is a saved ordering of people, it will use that order.
 
 ### day
->Saves the ordering of people in night rooms and moves everyone to the Voice Channel that the storyteller who executed the command is in.
+>Saves the ordering of people in night rooms and moves everyone to the Voice Channel with "town" in the name.
 
 ### save
 >Saves the ordering of people in night rooms without moving them.
