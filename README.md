@@ -33,7 +33,7 @@ Blood 🩸 will be bound to the channel that **~start** was executed in, so for 
 Now you can send the following commands without a prefix in that channel to continue the flow of the game:
 
 ### roles
->Starts a call/response to save the role of every player in the Voice Channel who is not the storyteller. Once done, will respond with a complete list of all **player/role** pairs, and will ask to either save, save and auto-DM, edit, or discard.
+>Starts a call/response to save the role of every player in the Voice Channel who is not the storyteller. Once done, you can type **dm roles** and start the game!.
 
 ### dm roles
 >Will DM all saved roles to each player. If there are no roles set for the session, this command will fail. If there are some players who have roles and some who don't, this command will fail.
