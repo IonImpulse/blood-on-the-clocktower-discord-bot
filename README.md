@@ -13,7 +13,7 @@ This is an example of what your server should look like:
 
 ![Example Discord Server](https://github.com/IonImpulse/blood-on-the-clocktower-discord-bot/raw/main/assets/Setup%20Photo.png)
 
-Make sure that your storyteller has a role with the word "storyteller" in it, case insensitive. It does not need any permissions, it is just a way to differentiate who can control games and who shouldn't be moved at night/wakeup.
+Make sure that your storyteller has a role with the word "storyteller" in it, case insensitive. It does not need any permissions, it is just a way to differentiate who can control games and who shouldn't be moved at night/wake-up.
 
 #### Ex: there are 10 people in a server, and two of them have a role named "Storytellers". The one who uses the command "~start" will be able to control the flow of the game, but no one else will.
 
@@ -36,7 +36,7 @@ Now you can send the following commands without a prefix in that channel to cont
 >Starts a call/response to save the role of every player in the Voice Channel who is not the storyteller. Once done, will respond with a complete list of all **player/role** pairs, and will ask to either save, save and auto-DM, edit, or discard.
 
 ### dm roles
->Will DM all saved roles to each player. If there are no roles set for the session, this command will fail. If there are some players who have roles and some who don't, this command will fail, but can be overridden by specifying **"dm roles force"** 
+>Will DM all saved roles to each player. If there are no roles set for the session, this command will fail. If there are some players who have roles and some who don't, this command will fail.
 
 ### night
 >Moves everyone *but* the storyteller who executed the command (who is also in the Voice Channel the storyteller is in) to a night room. If there is a saved ordering of people, it will use that order.

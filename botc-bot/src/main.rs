@@ -498,7 +498,6 @@ async fn night(ctx: &Context, msg: &Message) {
     
     send_msg(&msg, &ctx, String::from("Sending members to sleep...")).await;
 
-    
     let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
 
     // Start accesssing main database with lock
@@ -512,8 +511,6 @@ async fn night(ctx: &Context, msg: &Message) {
     let all_channels = GuildId(guild_id.clone()).channels(&ctx.http).await.unwrap();
     
     let mut night_category: Option<GuildChannel> = None;
-
-    let storyteller_id = msg.author.id;
 
     for channel in all_channels.clone() {
 
@@ -541,19 +538,39 @@ async fn night(ctx: &Context, msg: &Message) {
 
         if &night_channels.len() >= &current_state.roles.len() {
             for member in current_state.roles.clone() {
-                if current_state.room_assignments.contains_key(&member.0) {
-                    member.1.move_to_voice_channel(&ctx.http, current_state.room_assignments.get(&member.0).unwrap()).await;
-                } else {
-                    for channel in &night_channels {
-                        if channel.1 == false {
-                            member.1.move_to_voice_channel(&ctx.http, channel.0.id).await;
+                // If they are not in the room assignment HashMap, create
+                // an assigned room for them
+                if !current_state.room_assignments.contains_key(&member.0) {
+                    for index in 0..night_channels.len() {
+                        if night_channels[index].1 == false {    
+                            current_state.room_assignments.insert(member.0, night_channels[index].0.id);
+    
+                            night_channels[index].1 = true;
                             break;
                         }
                     }
                 }
+
+                let temp_assignment = current_state.room_assignments.get(&member.0);
+
+                if let Some(value) = temp_assignment {
+                    // Move them to the assigned room
+                    member.1.move_to_voice_channel(&ctx.http, value).await;
+                } else {
+                    send_msg(&msg, &ctx, String::from(format!("**Error:** Corrupted room assignment for {}", member.1.user.name))).await;
+                }                
             }
 
+            // Start accesssing main database with lock
+            let mut lock = BLOOD_DATABASE.lock().await;
+                            
+            lock.blood_guilds.insert(current_state.id, current_state);
+
+            drop(lock);
+            // Unlock main database
+
             send_msg(&msg, &ctx, String::from("**Sent!**")).await;
+
         } else {
             send_msg(&msg, &ctx, String::from("**Error:** Not enough night Voice Channels!")).await;
         }
@@ -567,10 +584,103 @@ async fn night(ctx: &Context, msg: &Message) {
 
 async fn day(ctx: &Context, msg: &Message) {
     print_command(&msg);
+
+    send_msg(&msg, &ctx, String::from("Waking up members...")).await;
+    
+    save(&ctx, &msg).await;
+
+    let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
+
+    // Start accesssing main database with lock
+    let lock = BLOOD_DATABASE.lock().await;
+                
+    let current_state = lock.blood_guilds[guild_id].clone();
+
+    drop(lock);
+    // Unlock main database
+
+    if &current_state.roles.len() > &(0 as usize) {
+        let all_channels = GuildId(guild_id.clone()).channels(&ctx.http).await.unwrap();
+        
+        let mut town_voice_channel: Option<GuildChannel> = None;
+
+        for channel in all_channels.clone() {
+
+            // Check if the channel is both a category and has "night" in the name
+            if channel.1.kind == ChannelType::Voice && channel.1.name.to_lowercase().contains("town") {
+                town_voice_channel = Some(channel.1);
+                break;
+            }
+        }
+
+        if let Some(value) = town_voice_channel {                
+            for member in &current_state.roles {
+                member.1.move_to_voice_channel(&ctx.http, value.clone()).await;
+            }
+
+        } else {
+            send_msg(&msg, &ctx, String::from("**Error:** No Voice Channel with \"town\" in the name was found!")).await;
+        }
+
+    } else {
+        send_msg(&msg, &ctx, String::from("**Error:** Roles have not been assigned yet, so no members were moved!")).await;
+    }
+
 }
 
 async fn save(ctx: &Context, msg: &Message) {
     print_command(&msg);
+
+    let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
+
+    // Start accesssing main database with lock
+    let lock = BLOOD_DATABASE.lock().await;
+                
+    let mut current_state = lock.blood_guilds[guild_id].clone();
+
+    drop(lock);
+    // Unlock main database
+
+    let all_channels = GuildId(guild_id.clone()).channels(&ctx.http).await.unwrap();
+    
+    let mut night_category: Option<GuildChannel> = None;
+
+    for channel in all_channels.clone() {
+
+        // Check if the channel is both a category and has "night" in the name
+        if channel.1.kind == ChannelType::Category && channel.1.name.to_lowercase().contains("night") {
+            night_category = Some(channel.1);
+            break;
+        }
+    }
+
+    if let Some(value) = night_category {
+        let night_category: GuildChannel = value;
+
+        for channel in all_channels.clone() {
+            if channel.1.kind == ChannelType::Voice {
+                if let Some(value) = channel.1.category_id {
+                    if value.as_u64() == night_category.id.as_u64() {
+                        let temp_members = channel.1.members(&ctx.cache).await.unwrap();
+
+                        if &temp_members.len() == &(1 as usize) {
+                            current_state.room_assignments.insert(temp_members[0].user.id.as_u64().clone(), channel.0);
+                        }
+                    }
+                }
+            }
+        }
+
+        // Start accesssing main database with lock
+        let mut lock = BLOOD_DATABASE.lock().await;
+                        
+        lock.blood_guilds.insert(current_state.id, current_state);
+
+        drop(lock);
+        // Unlock main database
+    } else {
+        send_msg(&msg, &ctx, String::from("**Error:** Could not save night positions!")).await;
+    }
 }
 
 
