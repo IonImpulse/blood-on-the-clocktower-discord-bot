@@ -363,9 +363,6 @@ async fn roles(ctx: &Context, msg: &Message) {
     drop(lock);
     // Unlock main database
 
-    // Set the game state 
-    current_state.game_state = GameState::SettingRoles;
-
     let mut is_correct = false;
 
     match current_state.game_state {
@@ -375,6 +372,9 @@ async fn roles(ctx: &Context, msg: &Message) {
     }
 
     if is_correct {
+
+        // Set the game state 
+        current_state.game_state = GameState::SettingRoles;
 
         // Check to see if this was called for the first time or is a continuation
         if &msg.content == "roles" {
@@ -495,6 +495,74 @@ async fn dm_roles(ctx: &Context, msg: &Message) {
 
 async fn night(ctx: &Context, msg: &Message) {
     print_command(&msg);
+    
+    send_msg(&msg, &ctx, String::from("Sending members to sleep...")).await;
+
+    
+    let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
+
+    // Start accesssing main database with lock
+    let lock = BLOOD_DATABASE.lock().await;
+                
+    let mut current_state = lock.blood_guilds[guild_id].clone();
+
+    drop(lock);
+    // Unlock main database
+
+    let all_channels = GuildId(guild_id.clone()).channels(&ctx.http).await.unwrap();
+    
+    let mut night_category: Option<GuildChannel> = None;
+
+    let storyteller_id = msg.author.id;
+
+    for channel in all_channels.clone() {
+
+        // Check if the channel is both a category and has "night" in the name
+        if channel.1.kind == ChannelType::Category && channel.1.name.to_lowercase().contains("night") {
+            night_category = Some(channel.1);
+            break;
+        }
+    }
+
+    if let Some(value) = night_category {
+        let night_category: GuildChannel = value;
+
+        let mut night_channels: Vec<(GuildChannel, bool)> = Vec::new();
+
+        for channel in all_channels.clone() { 
+            if channel.1.kind == ChannelType::Voice {
+                if let Some(value) = channel.1.category_id {
+                    if value.as_u64() == night_category.id.as_u64() {
+                        night_channels.push((channel.1.clone(), false));
+                    }
+                }
+            }
+        }
+
+        if &night_channels.len() >= &current_state.roles.len() {
+            for member in current_state.roles.clone() {
+                if current_state.room_assignments.contains_key(&member.0) {
+                    member.1.move_to_voice_channel(&ctx.http, current_state.room_assignments.get(&member.0).unwrap()).await;
+                } else {
+                    for channel in &night_channels {
+                        if channel.1 == false {
+                            member.1.move_to_voice_channel(&ctx.http, channel.0.id).await;
+                            break;
+                        }
+                    }
+                }
+            }
+
+            send_msg(&msg, &ctx, String::from("**Sent!**")).await;
+        } else {
+            send_msg(&msg, &ctx, String::from("**Error:** Not enough night Voice Channels!")).await;
+        }
+
+
+    } else {
+        send_msg(&msg, &ctx, String::from("**Error:** Could not find a category of night channels!")).await;
+    }
+
 }
 
 async fn day(ctx: &Context, msg: &Message) {
