@@ -798,8 +798,8 @@ async fn edit_role(ctx: &Context, msg: &Message) {
 
     let params: Vec<&str> = msg.content.split(" ").collect();
 
-    if params.len() == 3 {
-        let try_num = params.get(2).unwrap().parse::<u16>();
+    if params.len() == 2 {
+        let try_num = params.get(1).unwrap().parse::<u16>();
 
         let num;
         
@@ -814,17 +814,11 @@ async fn edit_role(ctx: &Context, msg: &Message) {
 
                 let role_to_return = (role_to_edit.0.clone(), role_to_edit.1.clone(), String::from("none"));
 
-                current_state.roles.insert((num - 1) as usize, role_to_return);
-                
-                // Start accesssing main database with lock
-                let mut lock = BLOOD_DATABASE.lock().await;
+                current_state.roles[(num - 1) as usize] = role_to_return;
 
-                lock.blood_guilds.insert(current_state.id, current_state);
+                current_state.game_state = GameState::SettingRoles;
 
-                drop(lock);
-                // Unlock main database
-
-                roles(&ctx, &msg).await;
+                ask_for_role(&ctx, &msg, current_state).await;
 
             } else {
                 send_msg(&msg, &ctx, String::from("Please provide a number in the valid range!")).await;
@@ -884,7 +878,7 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
             num += 1;
         }
         
-        content = format!("{}{}", content, "If a mistake was made, type \"edit role [number]\" to edit the role for that number.");
+        content = format!("{}{}", content, "If a mistake was made, type \"edit [number]\" to edit the role for that number.");
 
         send_msg(
             &msg,
