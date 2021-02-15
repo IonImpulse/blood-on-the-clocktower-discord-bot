@@ -467,6 +467,13 @@ async fn roles(ctx: &Context, msg: &Message) {
 async fn dm_roles(ctx: &Context, msg: &Message) {
     print_command(&msg);
 
+    send_msg(
+        &msg,
+        &ctx,
+        String::from("**Sending...**"),
+    )
+    .await;
+
     let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
 
     // Start accesssing main database with lock
@@ -482,7 +489,7 @@ async fn dm_roles(ctx: &Context, msg: &Message) {
 
         for member in &current_state.roles {
             let message_to_send: String = format!(
-                "Your role this game is **{}**. Don't tell anyone!",
+                "Your role this game is the **{}**. Don't tell anyone!",
                 &member.2
             );
 
@@ -768,6 +775,22 @@ async fn save(ctx: &Context, msg: &Message) {
     }
 }
 
+async fn edit_role(ctx: &Context, msg: &Message) {
+    print_command(&msg);
+
+    let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
+
+    // Start accesssing main database with lock
+    let lock = BLOOD_DATABASE.lock().await;
+
+    let mut current_state = lock.blood_guilds[guild_id].clone();
+
+    drop(lock);
+    // Unlock main database
+
+
+}
+
 async fn nothing(ctx: &Context, msg: &Message) {
     let content = String::from("Command not found. Please try again!");
     send_msg(&msg, &ctx, content).await;
@@ -800,10 +823,26 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
     }
 
     if sent_request == false {
+        let mut content: String = String::from("All roles assigned as such:\n");
+        let mut num: u16 = 1;
+
+        for user_tuple in &current_state.roles {
+            let mut user_name: String = String::from(&user_tuple.1.user.name);
+
+            if let Some(value) = &user_tuple.1.nick {
+                user_name = value.clone();
+            }
+
+            content = format!("{}{}) {} is **{}**\n", content, num, user_name, user_tuple.2);
+            num += 1;
+        }
+        
+        content = format!("{}{}", content, "If a mistake was made, type \"edit role [number]\" to edit the role for that number.");
+
         send_msg(
             &msg,
             &ctx,
-            String::from("All roles assigned! Ready to start the game..."),
+            content,
         )
         .await;
 
