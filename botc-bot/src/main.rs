@@ -105,15 +105,22 @@ impl EventHandler for Handler {
                             if is_rolling {
                                 roles(&ctx, &msg).await;
                             } else {
-                                match msg.content.as_str() {
-                                    "roles" => roles(&ctx, &msg).await,
-                                    "dm roles" => dm_roles(&ctx, &msg).await,
-                                    "night" => night(&ctx, &msg).await,
-                                    "sleep" => night(&ctx, &msg).await,
-                                    "day" => day(&ctx, &msg).await,
-                                    "wake" => day(&ctx, &msg).await,
-                                    "save" => save(&ctx, &msg).await,
-                                    _ => nothing(&ctx, &msg).await,
+                                if msg.content.len() > 0 {
+                                    let params: Vec<&str> = msg.content.split(" ").collect();
+
+                                    let first_param = params.get(0).unwrap().clone();
+                                    
+                                    match first_param {
+                                        "roles" => roles(&ctx, &msg).await,
+                                        "dm" => dm_roles(&ctx, &msg).await,
+                                        "night" => night(&ctx, &msg).await,
+                                        "sleep" => night(&ctx, &msg).await,
+                                        "day" => day(&ctx, &msg).await,
+                                        "wake" => day(&ctx, &msg).await,
+                                        "save" => save(&ctx, &msg).await,
+                                        "edit" => edit_role(&ctx, &msg).await,
+                                        _ => nothing(&ctx, &msg).await,
+                                    }
                                 }
                             }
                         }
@@ -353,6 +360,7 @@ async fn end(ctx: &Context, msg: &Message) -> CommandResult {
 async fn help(ctx: &Context, msg: &Message) -> CommandResult {
     Ok(())
 }
+
 async fn roles(ctx: &Context, msg: &Message) {
     print_command(&msg);
 
@@ -788,6 +796,45 @@ async fn edit_role(ctx: &Context, msg: &Message) {
     drop(lock);
     // Unlock main database
 
+    let params: Vec<&str> = msg.content.split(" ").collect();
+
+    if params.len() == 3 {
+        let try_num = params.get(2).unwrap().parse::<u16>();
+
+        let num;
+        
+        match try_num {
+            Ok(n) => num = n,
+            Err(e) => num = 0,
+        }
+
+        if num > 0 {
+            if num <= (current_state.roles.len() as u16) {
+                let role_to_edit = current_state.roles.get((num - 1) as usize).unwrap();
+
+                let role_to_return = (role_to_edit.0.clone(), role_to_edit.1.clone(), String::from("none"));
+
+                current_state.roles.insert((num - 1) as usize, role_to_return);
+                
+                // Start accesssing main database with lock
+                let mut lock = BLOOD_DATABASE.lock().await;
+
+                lock.blood_guilds.insert(current_state.id, current_state);
+
+                drop(lock);
+                // Unlock main database
+
+                roles(&ctx, &msg).await;
+
+            } else {
+                send_msg(&msg, &ctx, String::from("Please provide a number in the valid range!")).await;
+            }
+
+        } else {
+            send_msg(&msg, &ctx, String::from("Please provide a number to edit!")).await;
+        }
+
+    }
 
 }
 
