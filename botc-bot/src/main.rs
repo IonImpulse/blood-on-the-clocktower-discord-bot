@@ -813,7 +813,7 @@ async fn edit_role(ctx: &Context, msg: &Message) {
                 let role_to_edit = current_state.roles.get((num - 1) as usize).unwrap();
 
                 let role_to_return = (role_to_edit.0.clone(), role_to_edit.1.clone(), String::from("none"));
-
+d
                 current_state.roles[(num - 1) as usize] = role_to_return;
 
                 current_state.game_state = GameState::SettingRoles;
