@@ -1,8 +1,15 @@
+mod games;
+use games::*;
+
+mod banners;
+use banners::*;
+
 use tokio;
 use tokio::sync::Mutex;
 
 use lazy_static::lazy_static;
 
+use serenity::builder::*;
 use serenity::client::{Client, Context, EventHandler};
 use serenity::framework::standard::{
     macros::{command, group},
@@ -11,7 +18,6 @@ use serenity::framework::standard::{
 use serenity::model::channel::*;
 use serenity::model::guild::*;
 use serenity::model::id::*;
-
 use serenity::{
     async_trait,
     client::bridge::gateway::ShardManager,
@@ -32,9 +38,9 @@ impl TypeMapKey for ShardManagerContainer {
 
 struct Handler;
 
-async fn is_storyteller(ctx: &Context, msg: &Message) -> bool {
+async fn has_discord_role(ctx: &Context, msg: &Message, role_string: &str) -> bool {
     let roles: &Vec<RoleId> = &msg.member.as_ref().unwrap().roles;
-    let mut storyteller: bool = false;
+    let mut is_role: bool = false;
 
     for role in roles {
         if role.to_role_cached(&ctx.cache).await.as_ref().is_some() {
@@ -45,14 +51,14 @@ async fn is_storyteller(ctx: &Context, msg: &Message) -> bool {
                 .unwrap()
                 .name
                 .to_lowercase()
-                .contains("storytell")
+                .contains(role_string)
             {
-                storyteller = true;
+                is_role = true;
             }
         }
     }
 
-    return storyteller;
+    return is_role;
 }
 
 #[async_trait]
@@ -73,7 +79,7 @@ impl EventHandler for Handler {
 
             if message_in_guild {
                 // Next, check if this sent by a storyteller, as only they can use commands
-                if is_storyteller(&ctx, &msg).await {
+                if has_discord_role(&ctx, &msg, "storytell").await {
                     // Print the message to console
                     print_echo(&msg);
 
@@ -109,7 +115,6 @@ impl EventHandler for Handler {
                                     let params: Vec<&str> = msg.content.split(" ").collect();
 
                                     let first_param = params.get(0).unwrap().clone();
-                                    
                                     match first_param {
                                         "roles" => roles(&ctx, &msg).await,
                                         "dm" => dm_roles(&ctx, &msg).await,
@@ -250,8 +255,10 @@ lazy_static! {
 
 #[tokio::main]
 async fn main() {
-    println!("=======================================");
-    println!("");
+    // Print banner startup art
+    println!("\n{}", banners::LINE.black());
+    println!("{}", banners::STARTUP.red());
+    println!("{}\n", banners::LINE.black());
 
     print_info("Starting up...");
 
@@ -280,7 +287,7 @@ async fn main() {
 
 #[command]
 async fn start(ctx: &Context, msg: &Message) -> CommandResult {
-    if is_storyteller(&ctx, &msg).await {
+    if has_discord_role(&ctx, &msg, "storytell").await {
         print_command(&msg);
 
         let is_guild: bool = msg.guild_id.as_ref().is_some();
@@ -326,7 +333,7 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 
 #[command]
 async fn end(ctx: &Context, msg: &Message) -> CommandResult {
-    if is_storyteller(&ctx, &msg).await {
+    if has_discord_role(&ctx, &msg, "storytell").await {
         print_command(&msg);
 
         let is_guild: bool = msg.guild_id.as_ref().is_some();
@@ -366,13 +373,7 @@ async fn roles(ctx: &Context, msg: &Message) {
 
     let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
 
-    // Start accesssing main database with lock
-    let lock = BLOOD_DATABASE.lock().await;
-
-    let mut current_state = lock.blood_guilds[guild_id].clone();
-
-    drop(lock);
-    // Unlock main database
+    let mut current_state = get_database(&guild_id).await;
 
     let mut is_correct = false;
 
@@ -419,7 +420,9 @@ async fn roles(ctx: &Context, msg: &Message) {
                 let members_in_vc = value.members(&ctx.cache).await.unwrap();
 
                 for member in members_in_vc {
-                    if member.user.id != storyteller_id {
+                    if member.user.id != storyteller_id
+                        && !has_discord_role(&ctx, &msg, "spectator").await
+                    {
                         current_state.roles.push((
                             *member.user.id.as_u64(),
                             member,
@@ -475,22 +478,11 @@ async fn roles(ctx: &Context, msg: &Message) {
 async fn dm_roles(ctx: &Context, msg: &Message) {
     print_command(&msg);
 
-    send_msg(
-        &msg,
-        &ctx,
-        String::from("**Sending...**"),
-    )
-    .await;
+    send_msg(&msg, &ctx, String::from("**Sending...**")).await;
 
     let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
 
-    // Start accesssing main database with lock
-    let lock = BLOOD_DATABASE.lock().await;
-
-    let mut current_state = lock.blood_guilds[guild_id].clone();
-
-    drop(lock);
-    // Unlock main database
+    let mut current_state = get_database(&guild_id).await;
 
     if current_state.roles.len() > 0 {
         let mut successful_dms: u32 = 0;
@@ -548,13 +540,8 @@ async fn dm_roles(ctx: &Context, msg: &Message) {
     // Once completed without errors, gamestate is set to playing
     current_state.game_state = GameState::Playing;
 
-    // Start accesssing main database with lock
-    let mut lock = BLOOD_DATABASE.lock().await;
+    set_database(current_state).await;
 
-    lock.blood_guilds.insert(current_state.id, current_state);
-
-    drop(lock);
-    // Unlock main database
 }
 
 async fn night(ctx: &Context, msg: &Message) {
@@ -564,13 +551,7 @@ async fn night(ctx: &Context, msg: &Message) {
 
     let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
 
-    // Start accesssing main database with lock
-    let lock = BLOOD_DATABASE.lock().await;
-
-    let mut current_state = lock.blood_guilds[guild_id].clone();
-
-    drop(lock);
-    // Unlock main database
+    let mut current_state = get_database(&guild_id).await;
 
     let all_channels = GuildId(guild_id.clone()).channels(&ctx.http).await.unwrap();
 
@@ -636,15 +617,10 @@ async fn night(ctx: &Context, msg: &Message) {
                 }
             }
 
-            // Start accesssing main database with lock
-            let mut lock = BLOOD_DATABASE.lock().await;
-
-            lock.blood_guilds.insert(current_state.id, current_state);
-
-            drop(lock);
-            // Unlock main database
+            set_database(current_state).await;
 
             send_msg(&msg, &ctx, String::from("**Sent!**")).await;
+
         } else {
             send_msg(
                 &msg,
@@ -672,13 +648,7 @@ async fn day(ctx: &Context, msg: &Message) {
 
     let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
 
-    // Start accesssing main database with lock
-    let lock = BLOOD_DATABASE.lock().await;
-
-    let current_state = lock.blood_guilds[guild_id].clone();
-
-    drop(lock);
-    // Unlock main database
+    let current_state = get_database(&guild_id).await;
 
     if &current_state.roles.len() > &(0 as usize) {
         let all_channels = GuildId(guild_id.clone()).channels(&ctx.http).await.unwrap();
@@ -802,7 +772,6 @@ async fn edit_role(ctx: &Context, msg: &Message) {
         let try_num = params.get(1).unwrap().parse::<u16>();
 
         let num;
-        
         match try_num {
             Ok(n) => num = n,
             Err(e) => num = 0,
@@ -812,24 +781,29 @@ async fn edit_role(ctx: &Context, msg: &Message) {
             if num <= (current_state.roles.len() as u16) {
                 let role_to_edit = current_state.roles.get((num - 1) as usize).unwrap();
 
-                let role_to_return = (role_to_edit.0.clone(), role_to_edit.1.clone(), String::from("none"));
-d
+                let role_to_return = (
+                    role_to_edit.0.clone(),
+                    role_to_edit.1.clone(),
+                    String::from("none"),
+                );
+
                 current_state.roles[(num - 1) as usize] = role_to_return;
 
                 current_state.game_state = GameState::SettingRoles;
 
                 ask_for_role(&ctx, &msg, current_state).await;
-
             } else {
-                send_msg(&msg, &ctx, String::from("Please provide a number in the valid range!")).await;
+                send_msg(
+                    &msg,
+                    &ctx,
+                    String::from("Please provide a number in the valid range!"),
+                )
+                .await;
             }
-
         } else {
             send_msg(&msg, &ctx, String::from("Please provide a number to edit!")).await;
         }
-
     }
-
 }
 
 async fn nothing(ctx: &Context, msg: &Message) {
@@ -864,7 +838,7 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
     }
 
     if sent_request == false {
-        let mut content: String = String::from("All roles assigned as such:\n");
+        let mut content: String = String::from("");
         let mut num: u16 = 1;
 
         for user_tuple in &current_state.roles {
@@ -874,22 +848,49 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
                 user_name = value.clone();
             }
 
-            content = format!("{}{}) {} is **{}**\n", content, num, user_name, user_tuple.2);
+            content = format!(
+                "{}{}) {} is **{}**\n",
+                content, num, user_name, user_tuple.2
+            );
             num += 1;
         }
-        
-        content = format!("{}{}", content, "If a mistake was made, type \"edit [number]\" to edit the role for that number.");
 
-        send_msg(
-            &msg,
-            &ctx,
-            content,
-        )
-        .await;
+        let mut footer = CreateEmbedFooter;
+
+        let _ = msg.channel_id.send_message(&ctx.http, |m| {
+            m.embed(|mut e| {
+                e.title("Role List:");
+                e.description(content);
+                e
+            });
+            m
+        });
 
         current_state.game_state = GameState::SettingUp;
     }
 
+    // Start accesssing main database with lock
+    let mut lock = BLOOD_DATABASE.lock().await;
+
+    lock.blood_guilds.insert(current_state.id, current_state);
+
+    drop(lock);
+    // Unlock main database
+}
+
+async fn get_database(guild_id: &u64) -> BloodGuild {
+    // Start accesssing main database with lock
+    let lock = BLOOD_DATABASE.lock().await;
+
+    let current_state = lock.blood_guilds[guild_id].clone();
+
+    drop(lock);
+    // Unlock main database
+
+    return current_state;
+}
+
+async fn set_database(current_state: BloodGuild) {
     // Start accesssing main database with lock
     let mut lock = BLOOD_DATABASE.lock().await;
 
