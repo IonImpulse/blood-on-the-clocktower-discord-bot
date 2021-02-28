@@ -1,5 +1,7 @@
-mod games;
 mod banners;
+mod games;
+
+use games::*;
 
 use std::{collections::*, env, sync::Arc};
 
@@ -13,24 +15,16 @@ use serenity::framework::standard::{
 };
 
 use serenity::{
-    async_trait,
-    client::*,
-    client::bridge::gateway::ShardManager,
-    http::Http,
-    prelude::*,
+    async_trait, client::bridge::gateway::ShardManager, client::*, http::Http, prelude::*,
 };
 
-use serenity::model::{
-    channel::*,
-    guild::*,
-    id::*,
-    event::*,
-    gateway::*,
-};
+use serenity::model::{channel::*, event::*, gateway::*, guild::*, id::*};
 
 use serenity_utils::{prompt::reaction_prompt, Error};
 
 use colored::*;
+
+use csv::Reader;
 
 pub struct ShardManagerContainer;
 
@@ -196,11 +190,53 @@ async fn send_msg(msg: &Message, ctx: &Context, content: String) {
     }
 }
 
+// Function to load game from CSV file
 
-// Function to load game from CSV file 
+async fn load_game(game_name: String, path: &str) -> GameType {
+    let mut rdr = Reader::from_path(path).unwrap();
+    let mut temp_hashmap: HashMap<String, Character> = HashMap::new();
 
-async fn load_game(game_index: usize) {
+    for result in rdr.records() {
+        let record = result.unwrap();
 
+        let name = String::from(record.get(0).unwrap());
+        let char_type: CharacterType;
+        match record.get(1).unwrap() {
+            "Demon" => char_type = CharacterType::Demon,
+            "Minion" => char_type = CharacterType::Minion,
+            "Outsider" => char_type = CharacterType::Outsider,
+            "Townsfolk" => char_type = CharacterType::Townsfolk,
+            "Traveler" => char_type = CharacterType::Traveler,
+            "Fabled" => char_type = CharacterType::Fabled,
+            _ => char_type = CharacterType::Other,
+        }
+        let first_order_index: i32 = record.get(2).unwrap().parse().unwrap();
+        let order_index: i32 = record.get(3).unwrap().parse().unwrap();
+        let night_action: ActionTime;
+
+        match record.get(4).unwrap() {
+            "EveryNight" => night_action = ActionTime::EveryNight,
+            "NoNight" => night_action = ActionTime::NoNight,
+            "VariableNight" => night_action = ActionTime::VariableNight,
+            "OnlyFirstNight" => night_action = ActionTime::OnlyFirstNight,
+            "EveryNightNotFirst" => night_action = ActionTime::EveryNightNotFirst,
+            "DeathNight" => night_action = ActionTime::DeathNight,
+            _ => night_action = ActionTime::NoNight,
+        }
+                
+        temp_hashmap.insert(
+            String::from(&name),
+            Character::new(
+                name,
+                char_type,
+                first_order_index,
+                order_index,
+                night_action,
+            ),
+        );
+    }
+
+    return GameType::new(game_name, temp_hashmap);
 }
 
 // Here are the custom enums and structs for each server
@@ -229,6 +265,7 @@ pub struct BloodGuild {
 #[derive(Clone)]
 pub struct GlobalBloodState {
     blood_guilds: HashMap<u64, BloodGuild>,
+    games: Vec<GameType>,
 }
 
 impl BloodGuild {
@@ -239,7 +276,6 @@ impl BloodGuild {
             game_state: GameState::SettingUp,
             storyteller_channel: storyteller_channel,
             roles: Vec::new(),
-            
             room_assignments: HashMap::new(),
         }
     }
@@ -250,6 +286,7 @@ impl GlobalBloodState {
     fn new() -> Self {
         GlobalBloodState {
             blood_guilds: HashMap::new(),
+            games: Vec::new(),
         }
     }
 }
@@ -288,6 +325,22 @@ async fn main() {
         .await
         .expect("Error creating client");
 
+    print_status("Loading games...");
+
+    // Load game 1: Trouble Brewing
+    let trouble_brewing = load_game(
+        String::from("Trouble Brewing"),
+        "games/trouble_brewing.csv",
+    )
+    .await;
+    // Start accesssing main database with lock
+    let mut lock = BLOOD_DATABASE.lock().await;
+
+    lock.games.push(trouble_brewing);
+
+    drop(lock);
+    // Unlock main database
+
     print_info("Started!");
     // start listening for events by starting a single shard
     if let Err(why) = client.start().await {
@@ -322,29 +375,26 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
                 ReactionType::from('🌙'),
             ];
 
-            let prompt_msg = msg.channel_id.send_message(&ctx.http, |m| {
-                m.embed(|mut e| {
-                    e.title("Select Game Type:");
-                    e.description("🔴 Trouble Brewing\n\n🛐 Sects & Violets\n\n🌙 Bad Moon Rising");
-                    e
-                });
-                m
-            }).await;
+            let prompt_msg = msg
+                .channel_id
+                .send_message(&ctx.http, |m| {
+                    m.embed(|mut e| {
+                        e.title("Select Game Type:");
+                        e.description(
+                            "🔴 Trouble Brewing\n\n🛐 Sects & Violets\n\n🌙 Bad Moon Rising",
+                        );
+                        e
+                    });
+                    m
+                })
+                .await;
 
             // Creates the prompt and returns the result. Because of `reaction_prompt`'s
             // return type, you can use the `?` operator to get the result.
             // The `Ok()` value is the selected emoji's index (wrt the `emojis` slice)
             // and the emoji itself. We don't require the emoji here, so we ignore it.
-            let (idx, _) = reaction_prompt(
-                ctx,
-                &prompt_msg.unwrap(),
-                &msg.author,
-                &emojis,
-                120.0
-            )
-            .await?;
-
-            let game_info = load_game(idx);
+            let (idx, _) =
+                reaction_prompt(ctx, &prompt_msg.unwrap(), &msg.author, &emojis, 120.0).await?;
 
             let content = String::from(
                 "**Type \"roles\" to start assigning roles once everyone is in voice chat!**",
@@ -583,7 +633,6 @@ async fn dm_roles(ctx: &Context, msg: &Message) {
     current_state.game_state = GameState::Playing;
 
     set_database(current_state).await;
-
 }
 
 async fn night(ctx: &Context, msg: &Message) {
@@ -662,7 +711,6 @@ async fn night(ctx: &Context, msg: &Message) {
             set_database(current_state).await;
 
             send_msg(&msg, &ctx, String::from("**Sent!**")).await;
-
         } else {
             send_msg(
                 &msg,
@@ -897,14 +945,17 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
             num += 1;
         }
 
-        let _ = msg.channel_id.send_message(&ctx.http, |m| {
-            m.embed(|mut e| {
-                e.title("Role List:");
-                e.description(content);
-                e
-            });
-            m
-        }).await;
+        let _ = msg
+            .channel_id
+            .send_message(&ctx.http, |m| {
+                m.embed(|mut e| {
+                    e.title("Role List:");
+                    e.description(content);
+                    e
+                });
+                m
+            })
+            .await;
 
         current_state.game_state = GameState::SettingUp;
     }

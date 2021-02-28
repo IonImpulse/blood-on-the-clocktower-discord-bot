@@ -1,0 +1,22 @@
+Role Name,Character Type,First Order Index,Order Index,Night Action
+Imp,Demon,9,3,EveryNight
+Poisoner,Minion,0,0,EveryNight
+Spy,Minion,8,9,EveryNight
+Scarlet Woman,Minion,-1,2,VariableNight
+Baron,Minion,-1,-1,NoNight
+Butler,Outsider,7,7,EveryNight
+Recluse,Outsider,-1,-1,NoNight
+Saint,Outsider,-1,-1,NoNight
+Washerwoman,Townsfolk,1,-1,OnlyFirstNight
+Librarian,Townsfolk,2,-1,OnlyFirstNight
+Investigator,Townsfolk,3,-1,OnlyFirstNight
+Chef,Townsfolk,4,-1,OnlyFirstNight
+Empath,Townsfolk,5,5,EveryNight
+Fortune Teller,Townsfolk,6,6,EveryNight
+Monk,Townsfolk,-1,1,EveryNightNotFirst
+Ravenkeeper,Townsfolk,-1,4,DeathNight
+Undertaker,Townsfolk,-1,8,VariableNight
+Virgin,Townsfolk,-1,-1,NoNight
+Slayer,Townsfolk,-1,-1,NoNight
+Soldier,Townsfolk,-1,-1,NoNight
+Mayor,Townsfolk,-1,-1,NoNight

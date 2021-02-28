@@ -1,10 +1,12 @@
 use std::collections::*;
 
+#[derive(Clone)]
 pub enum Alignment {
     Good,
     Evil,
 }
 
+#[derive(Clone)]
 pub enum ActionTime {
     OnlyFirstNight,
     EveryNight,
@@ -14,6 +16,7 @@ pub enum ActionTime {
     NoNight,
 }
 
+#[derive(Clone)]
 pub enum CharacterType {
     Townsfolk,
     Outsider,
@@ -24,7 +27,8 @@ pub enum CharacterType {
     Other,
 }
 
-pub struct Role {
+#[derive(Clone)]
+pub struct Character {
     name: String,
     alignment: Alignment,
     char_type: CharacterType,
@@ -33,23 +37,24 @@ pub struct Role {
     night_action: ActionTime,
 }
 
-impl Role {
-    fn new(
+impl Character {
+    pub fn new(
         name: String,
-        alignment: Alignment,
         char_type: CharacterType,
         first_order_index: i32,
         order_index: i32,
         night_action: ActionTime,
     ) -> Self {
 
-        let mut alignment = Alignment::Good;
+        let alignment: Alignment;
 
         match char_type {
             CharacterType::Demon => alignment = Alignment::Evil,
-
+            CharacterType::Minion => alignment = Alignment::Evil,
+            _ => alignment = Alignment::Good
         }
-        Role {
+
+        Character {
             name: name,
             alignment: alignment,
             char_type: char_type,
@@ -60,7 +65,20 @@ impl Role {
     }
 }
 
+#[derive(Clone)]
 pub struct GameType {
     name: String,
-    roles: HashMap<String, Role>,
+    roles: HashMap<String, Character>,
+}
+
+impl GameType {
+    pub fn new(
+        name: String,
+        roles: HashMap<String, Character>,
+    ) -> Self {
+        GameType {
+            name: name,
+            roles: roles,
+        }
+    }
 }
