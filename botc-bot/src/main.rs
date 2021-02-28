@@ -1,32 +1,34 @@
 mod games;
-use games::*;
-
 mod banners;
-use banners::*;
 
-use tokio;
+use std::{collections::*, env, sync::Arc};
+
 use tokio::sync::Mutex;
 
 use lazy_static::lazy_static;
 
-use serenity::builder::*;
-use serenity::client::{Client, Context, EventHandler};
 use serenity::framework::standard::{
     macros::{command, group},
     CommandResult, StandardFramework,
 };
-use serenity::model::channel::*;
-use serenity::model::guild::*;
-use serenity::model::id::*;
+
 use serenity::{
     async_trait,
+    client::*,
     client::bridge::gateway::ShardManager,
     http::Http,
-    model::{event::ResumedEvent, gateway::Ready, id::RoleId},
     prelude::*,
 };
 
-use std::{collections::*, env, sync::Arc};
+use serenity::model::{
+    channel::*,
+    guild::*,
+    id::*,
+    event::*,
+    gateway::*,
+};
+
+use serenity_utils::{prompt::reaction_prompt, Error};
 
 use colored::*;
 
@@ -194,6 +196,13 @@ async fn send_msg(msg: &Message, ctx: &Context, content: String) {
     }
 }
 
+
+// Function to load game from CSV file 
+
+async fn load_game(game_index: usize) {
+
+}
+
 // Here are the custom enums and structs for each server
 // Each server has a BloodGuild struct assigned to it in order to keep
 // track of the game as it goes on, and is saved to a shared async
@@ -230,6 +239,7 @@ impl BloodGuild {
             game_state: GameState::SettingUp,
             storyteller_channel: storyteller_channel,
             roles: Vec::new(),
+            
             room_assignments: HashMap::new(),
         }
     }
@@ -303,6 +313,38 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
                 String::from("**New game has been created!** Now bound to this channel...");
 
             send_msg(&msg, &ctx, content).await;
+
+            // Ask what game edition to play with serenity-utils
+
+            let emojis = [
+                ReactionType::from('🔴'),
+                ReactionType::from('🛐'),
+                ReactionType::from('🌙'),
+            ];
+
+            let prompt_msg = msg.channel_id.send_message(&ctx.http, |m| {
+                m.embed(|mut e| {
+                    e.title("Select Game Type:");
+                    e.description("🔴 Trouble Brewing\n\n🛐 Sects & Violets\n\n🌙 Bad Moon Rising");
+                    e
+                });
+                m
+            }).await;
+
+            // Creates the prompt and returns the result. Because of `reaction_prompt`'s
+            // return type, you can use the `?` operator to get the result.
+            // The `Ok()` value is the selected emoji's index (wrt the `emojis` slice)
+            // and the emoji itself. We don't require the emoji here, so we ignore it.
+            let (idx, _) = reaction_prompt(
+                ctx,
+                &prompt_msg.unwrap(),
+                &msg.author,
+                &emojis,
+                120.0
+            )
+            .await?;
+
+            let game_info = load_game(idx);
 
             let content = String::from(
                 "**Type \"roles\" to start assigning roles once everyone is in voice chat!**",
@@ -656,7 +698,7 @@ async fn day(ctx: &Context, msg: &Message) {
         let mut town_voice_channel: Option<GuildChannel> = None;
 
         for channel in all_channels.clone() {
-            // Check if the channel is both a category and has "night" in the name
+            // Check if the channel is both a category and has "town" in the name
             if channel.1.kind == ChannelType::Voice
                 && channel.1.name.to_lowercase().contains("town")
             {
@@ -855,8 +897,6 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
             num += 1;
         }
 
-        let mut footer = CreateEmbedFooter;
-
         let _ = msg.channel_id.send_message(&ctx.http, |m| {
             m.embed(|mut e| {
                 e.title("Role List:");
@@ -864,7 +904,7 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
                 e
             });
             m
-        });
+        }).await;
 
         current_state.game_state = GameState::SettingUp;
     }
