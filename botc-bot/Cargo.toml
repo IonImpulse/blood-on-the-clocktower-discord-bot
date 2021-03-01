@@ -1,13 +1,15 @@
 [package]
 name = "botc-bot"
-version = "0.1.0"
+version = "0.2.0"
 authors = ["Ethan Vazquez <edv121@outlook.com>"]
 edition = "2018"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-tokio = { version = "1", features = ["full"] }
-serenity = { version = "0.10"}
+tokio = { version = "1.2.0", features = ["full"] }
+serenity = "0.10.2"
 colored = "2"
 lazy_static = "1.4.0"
+serenity_utils = "0.6.1"
+csv = "1.1"
