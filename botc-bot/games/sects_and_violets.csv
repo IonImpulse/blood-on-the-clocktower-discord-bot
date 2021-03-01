@@ -1,22 +1,26 @@
 Role Name,Character Type,First Order Index,Order Index,Night Action
-Imp,Demon,9,3,EveryNight
-Poisoner,Minion,0,0,EveryNight
-Spy,Minion,8,9,EveryNight
-Scarlet Woman,Minion,-1,2,VariableNight
-Baron,Minion,-1,-1,NoNight
-Butler,Outsider,7,7,EveryNight
-Recluse,Outsider,-1,-1,NoNight
-Saint,Outsider,-1,-1,NoNight
-Washerwoman,Townsfolk,1,-1,OnlyFirstNight
-Librarian,Townsfolk,2,-1,OnlyFirstNight
-Investigator,Townsfolk,3,-1,OnlyFirstNight
-Chef,Townsfolk,4,-1,OnlyFirstNight
-Empath,Townsfolk,5,5,EveryNight
-Fortune Teller,Townsfolk,6,6,EveryNight
-Monk,Townsfolk,-1,1,EveryNightNotFirst
-Ravenkeeper,Townsfolk,-1,4,DeathNight
-Undertaker,Townsfolk,-1,8,VariableNight
-Virgin,Townsfolk,-1,-1,NoNight
-Slayer,Townsfolk,-1,-1,NoNight
-Soldier,Townsfolk,-1,-1,NoNight
-Mayor,Townsfolk,-1,-1,NoNight
+Fang Gu,Demon,-1,5,EveryNight
+Vigormortis,Demon,-1,8,EveryNight
+No Dashii,Demon,-1,6,EveryNight
+Vortox,Demon,-1,7,EveryNight
+Evil Twin,Minion,2,-1,OnlyFirstNight
+Witch,Minion,3,2,EveryNight
+Cerenovus,Minion,4,3,EveryNight
+Pit-Hag,Minion,-1,4,EveryNight
+Mutant,Outsider,-1,-1,NoNight
+Sweetheart,Outsider,-1,10,DeathNight
+Barber,Outsider,-1,9,DeathNight
+Klutz,Outsider,-1,-1,NoNight
+Clockmaker,Townsfolk,5,-1,OnlyFirstNight
+Dreamer,Townsfolk,6,12,EveryNight
+Snake Charmer,Townsfolk,1,1,EveryNight
+Mathematician,Townsfolk,8,18,EveryNight
+Flowergirl,Townsfolk,-1,13,EveryNightNotFirst
+Town Crier,Townsfolk,-1,14,EveryNightNotFirst
+Oracle,Townsfolk,-1,15,EveryNightNotFirst
+Savant,Townsfolk,-1,-1,NoNight
+Seamstress,Townsfolk,7,16,VariableNight
+Philosopher,Townsfolk,0,0,EveryNight
+Artist,Townsfolk,-1,-1,NoNight
+Juggler,Townsfolk,-1,17,VariableNight
+Sage,Townsfolk,-1,11,DeathNight
