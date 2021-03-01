@@ -118,7 +118,6 @@ impl EventHandler for Handler {
                                         "sleep" => night(&ctx, &msg).await,
                                         "day" => day(&ctx, &msg).await,
                                         "wake" => day(&ctx, &msg).await,
-                                        "save" => save(&ctx, &msg).await,
                                         "edit" => edit_role(&ctx, &msg).await,
                                         _ => nothing(&ctx, &msg).await,
                                     }
@@ -223,7 +222,6 @@ async fn load_game(game_name: String, path: &str) -> GameType {
             "DeathNight" => night_action = ActionTime::DeathNight,
             _ => night_action = ActionTime::NoNight,
         }
-                
         temp_hashmap.insert(
             String::from(&name),
             Character::new(
@@ -252,13 +250,30 @@ pub enum GameState {
     Playing,
 }
 
+#[derive(Copy, Clone)]
+pub enum Time {
+    Day,
+    Night,
+}
+
+impl Time {
+    pub fn as_str(&self) -> &str {
+        match *self {
+            Time::Day => return "Day",
+            Time::Night => return "Night",
+        }
+    }
+}
+
 #[derive(Clone)]
 pub struct BloodGuild {
     id: u64,
     game_state: GameState,
     storyteller_channel: u64,
-    roles: Vec<(u64, Member, String)>,
-    room_assignments: HashMap<u64, ChannelId>,
+    roles: Vec<(u64, Member, Option<Character>)>,
+    game_type: GameType,
+    time: Time,
+    day_index: u32,
 }
 
 // Global HashMap struct to hold all global data
@@ -270,14 +285,20 @@ pub struct GlobalBloodState {
 
 impl BloodGuild {
     /// Create a new, empty, instance of "BloodGuild".
-    fn new(id: u64, storyteller_channel: u64) -> Self {
+    fn new(id: u64, storyteller_channel: u64, game_type: GameType) -> Self {
         BloodGuild {
             id: id,
             game_state: GameState::SettingUp,
             storyteller_channel: storyteller_channel,
             roles: Vec::new(),
-            room_assignments: HashMap::new(),
+            time: Time::Day,
+            day_index: 0,
+            game_type: game_type,
         }
+    }
+
+    pub fn get_time_str(&self) -> String {
+        return format!("Day: {} | Time: {}", self.day_index, self.time.as_str());
     }
 }
 
@@ -328,11 +349,8 @@ async fn main() {
     print_status("Loading games...");
 
     // Load game 1: Trouble Brewing
-    let trouble_brewing = load_game(
-        String::from("Trouble Brewing"),
-        "games/trouble_brewing.csv",
-    )
-    .await;
+    let trouble_brewing =
+        load_game(String::from("Trouble Brewing"), "games/trouble_brewing.csv").await;
     // Start accesssing main database with lock
     let mut lock = BLOOD_DATABASE.lock().await;
 
@@ -402,10 +420,12 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 
             send_msg(&msg, &ctx, content).await;
 
-            let temp_server = BloodGuild::new(*guild_id, *channel_id);
-
             // Start accesssing main database with lock
             let mut lock = BLOOD_DATABASE.lock().await;
+
+            let game_type = lock.games.get(idx).unwrap().clone();
+
+            let temp_server = BloodGuild::new(*guild_id, *channel_id, game_type.clone());
 
             lock.blood_guilds.insert(*guild_id, temp_server);
 
@@ -413,6 +433,22 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 
             drop(lock);
             // Unlock main database
+
+            let mut content: String = String::from(
+                "```markdown\n       Name       | Character Type |      Wake Condition      \n",
+            );
+            content += "--------------------------------------------------------------\n";
+
+            let mut characters = game_type.get_all_characters();
+            characters.sort_by_key(|d| d.char_type_str.clone());
+
+            for character in characters {
+                content += character.get_string().as_str();
+                content += "\n";
+            }
+            content += "```";
+
+            send_msg(&msg, &ctx, content).await;
 
             print_info(&format!("There are {} active games", num_servers));
         } else {
@@ -456,7 +492,7 @@ async fn end(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
-async fn help(ctx: &Context, msg: &Message) -> CommandResult {
+async fn help(_ctx: &Context, _msg: &Message) -> CommandResult {
     Ok(())
 }
 
@@ -515,11 +551,18 @@ async fn roles(ctx: &Context, msg: &Message) {
                     if member.user.id != storyteller_id
                         && !has_discord_role(&ctx, &msg, "spectator").await
                     {
-                        current_state.roles.push((
-                            *member.user.id.as_u64(),
-                            member,
-                            String::from("none"),
-                        ));
+                        let mut taken = false;
+
+                        for i in current_state.roles.clone() {
+                            if &i.0 == member.user.id.as_u64() {
+                                taken = true;
+                            }
+                        }
+                        if taken == false {
+                            current_state
+                                .roles
+                                .push((*member.user.id.as_u64(), member, None));
+                        }
                     }
                 }
 
@@ -551,15 +594,40 @@ async fn roles(ctx: &Context, msg: &Message) {
         } else {
             // Was a continuation, so assign the role to the last blank user
             for index in 0..current_state.roles.len() {
-                if current_state.roles[index].2 == String::from("none") {
-                    current_state.roles[index].2 = msg.content.clone();
+                if current_state.roles[index.clone()].2.as_ref().is_some() == false {
+                    let mut found_character: Option<Character> = None;
+
+                    for character in current_state.game_type.get_all_characters() {
+                        if character
+                            .name
+                            .to_lowercase()
+                            .contains(msg.content.clone().to_lowercase().as_str())
+                        {
+                            found_character = Some(character.clone());
+                            break;
+                        }
+                    }
+
+                    if let Some(_c_value) = found_character.clone() {
+                        current_state.roles[index.clone()].2 = found_character;
+
+                        print_info(&format!(
+                            "User {} is role {}",
+                            current_state.roles[index.clone()].1.user.name,
+                            current_state.roles[index.clone()].2.as_ref().unwrap().name
+                        ));
+                    } else {
+                        let content = format!(
+                            "Could not find role {} in current game. Please try again!",
+                            msg.content.clone().as_str()
+                        );
+                        send_msg(&msg, &ctx, content).await;
+                    }
+
+                    ask_for_role(&ctx, &msg, current_state).await;
+
                     // Once user is found, break loop
 
-                    print_info(&format!(
-                        "User {} is role {}",
-                        current_state.roles[index].1.user.name, current_state.roles[index].2
-                    ));
-                    ask_for_role(&ctx, &msg, current_state).await;
                     break;
                 }
             }
@@ -581,8 +649,9 @@ async fn dm_roles(ctx: &Context, msg: &Message) {
 
         for member in &current_state.roles {
             let message_to_send: String = format!(
-                "Your role this game is the **{}**. Don't tell anyone!",
-                &member.2
+                "Your role this game is the **{}**, a **{}**. Don't tell anyone!",
+                &member.2.as_ref().unwrap().name,
+                &member.2.as_ref().unwrap().char_type_str,
             );
 
             let result = &member
@@ -617,7 +686,10 @@ async fn dm_roles(ctx: &Context, msg: &Message) {
         send_msg(
             &msg,
             &ctx,
-            String::from(format!("**Sent {} successful DMs!**", successful_dms)),
+            String::from(format!(
+                "**Sent {} successful DMs!** Type \"night\" to send people to sleep!",
+                successful_dms
+            )),
         )
         .await;
     } else {
@@ -638,11 +710,86 @@ async fn dm_roles(ctx: &Context, msg: &Message) {
 async fn night(ctx: &Context, msg: &Message) {
     print_command(&msg);
 
-    send_msg(&msg, &ctx, String::from("Sending members to sleep...")).await;
-
     let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
 
     let mut current_state = get_database(&guild_id).await;
+
+    match current_state.time {
+        Time::Day => current_state.day_index += 1,
+        _ => (),
+    }
+
+    current_state.time = Time::Night;
+    let title: &str;
+    let mut content = String::from("");
+
+    let mut characters = current_state.roles.clone();
+
+    if current_state.day_index == 1 {
+        title = "First Night Order";
+        characters.sort_by_key(|d| d.2.as_ref().unwrap().first_order_index.clone());
+
+        let mut index: u32 = 1;
+
+        for character in characters.clone() {
+            let character_role = character.2.as_ref().unwrap();
+
+            if character_role.first_order_index != -1 {
+                content.push_str(
+                    format!(
+                        "{}) **{}** as the {}\n",
+                        index, character.1.user.name, character_role.name
+                    )
+                    .as_str(),
+                );
+
+                index += 1;
+            }
+        }
+    } else {
+        title = "Night Order";
+        characters.sort_by_key(|d| d.2.as_ref().unwrap().order_index.clone());
+
+        let mut index: u32 = 1;
+
+        for character in characters.clone() {
+            let character_role = character.2.as_ref().unwrap();
+            if character_role.first_order_index != -1 {
+                let warning: &str;
+
+                match character_role.night_action {
+                    ActionTime::OnlyFirstNight => warning = " *if triggered*",
+                    ActionTime::VariableNight => warning = " *if triggered*",
+                    ActionTime::DeathNight => warning = " *if triggered*",
+                    _ => warning = "",
+                }
+
+                content.push_str(
+                    format!(
+                        "{}) **{}** as the {}{}\n",
+                        index, character.1.user.name, character_role.name, warning,
+                    )
+                    .as_str(),
+                );
+
+                index += 1;
+            }
+        }
+    }
+
+    let _ = msg
+        .channel_id
+        .send_message(&ctx.http, |m| {
+            m.embed(|mut e| {
+                e.title(title);
+                e.description(content);
+                e
+            });
+            m
+        })
+        .await;
+
+    send_msg(&msg, &ctx, String::from("Sending members to sleep...")).await;
 
     let all_channels = GuildId(guild_id.clone()).channels(&ctx.http).await.unwrap();
 
@@ -673,26 +820,45 @@ async fn night(ctx: &Context, msg: &Message) {
             }
         }
 
-        if &night_channels.len() >= &current_state.roles.len() {
-            for member in current_state.roles.clone() {
-                // If they are not in the room assignment HashMap, create
-                // an assigned room for them
-                if !current_state.room_assignments.contains_key(&member.0) {
-                    for index in 0..night_channels.len() {
-                        if night_channels[index].1 == false {
-                            current_state
-                                .room_assignments
-                                .insert(member.0, night_channels[index].0.id);
+        night_channels.sort_by_key(|d| d.0.position);
+        let mut r_night_channels = night_channels.clone();
+        r_night_channels.reverse();
 
-                            night_channels[index].1 = true;
+        let mut taken_channels: Vec<bool> = vec![false; night_channels.len()];
+
+        if &night_channels.len() >= &current_state.roles.len() {
+            for member in characters {
+                let character_role = member.2.as_ref().unwrap();
+                let mut found_channel: Option<GuildChannel> = None;
+
+                if (current_state.day_index == 1 && character_role.first_order_index == -1)
+                    || (current_state.day_index != 1 && character_role.order_index == -1)
+                {
+                    let mut index: usize = night_channels.len() - 1;
+                    for value in r_night_channels.clone() {
+                        if taken_channels.get(index).unwrap() == &false {
+                            taken_channels[index] = true;
+                            found_channel = Some(value.0);
                             break;
                         }
+
+                        index -= 1;
+                    }
+                } else {
+                    let mut index: usize = 0;
+
+                    for value in night_channels.clone() {
+                        if taken_channels.get(index).unwrap() == &false {
+                            taken_channels[index] = true;
+                            found_channel = Some(value.0);
+                            break;
+                        }
+
+                        index += 1;
                     }
                 }
 
-                let temp_assignment = current_state.room_assignments.get(&member.0);
-
-                if let Some(value) = temp_assignment {
+                if let Some(value) = found_channel {
                     // Move them to the assigned room
                     member.1.move_to_voice_channel(&ctx.http, value).await;
                 } else {
@@ -734,11 +900,13 @@ async fn day(ctx: &Context, msg: &Message) {
 
     send_msg(&msg, &ctx, String::from("Waking up members...")).await;
 
-    save(&ctx, &msg).await;
-
     let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
 
-    let current_state = get_database(&guild_id).await;
+    let mut current_state = get_database(&guild_id).await;
+
+    current_state.time = Time::Day;
+
+    set_database(current_state.clone()).await;
 
     if &current_state.roles.len() > &(0 as usize) {
         let all_channels = GuildId(guild_id.clone()).channels(&ctx.http).await.unwrap();
@@ -780,69 +948,6 @@ async fn day(ctx: &Context, msg: &Message) {
     }
 }
 
-async fn save(ctx: &Context, msg: &Message) {
-    print_command(&msg);
-
-    let guild_id = msg.guild_id.as_ref().unwrap().as_u64();
-
-    // Start accesssing main database with lock
-    let lock = BLOOD_DATABASE.lock().await;
-
-    let mut current_state = lock.blood_guilds[guild_id].clone();
-
-    drop(lock);
-    // Unlock main database
-
-    let all_channels = GuildId(guild_id.clone()).channels(&ctx.http).await.unwrap();
-
-    let mut night_category: Option<GuildChannel> = None;
-
-    for channel in all_channels.clone() {
-        // Check if the channel is both a category and has "night" in the name
-        if channel.1.kind == ChannelType::Category
-            && channel.1.name.to_lowercase().contains("night")
-        {
-            night_category = Some(channel.1);
-            break;
-        }
-    }
-
-    if let Some(value) = night_category {
-        let night_category: GuildChannel = value;
-
-        for channel in all_channels.clone() {
-            if channel.1.kind == ChannelType::Voice {
-                if let Some(value) = channel.1.category_id {
-                    if value.as_u64() == night_category.id.as_u64() {
-                        let temp_members = channel.1.members(&ctx.cache).await.unwrap();
-
-                        if &temp_members.len() == &(1 as usize) {
-                            current_state
-                                .room_assignments
-                                .insert(temp_members[0].user.id.as_u64().clone(), channel.0);
-                        }
-                    }
-                }
-            }
-        }
-
-        // Start accesssing main database with lock
-        let mut lock = BLOOD_DATABASE.lock().await;
-
-        lock.blood_guilds.insert(current_state.id, current_state);
-
-        drop(lock);
-    // Unlock main database
-    } else {
-        send_msg(
-            &msg,
-            &ctx,
-            String::from("**Error:** Could not save night positions!"),
-        )
-        .await;
-    }
-}
-
 async fn edit_role(ctx: &Context, msg: &Message) {
     print_command(&msg);
 
@@ -871,11 +976,7 @@ async fn edit_role(ctx: &Context, msg: &Message) {
             if num <= (current_state.roles.len() as u16) {
                 let role_to_edit = current_state.roles.get((num - 1) as usize).unwrap();
 
-                let role_to_return = (
-                    role_to_edit.0.clone(),
-                    role_to_edit.1.clone(),
-                    String::from("none"),
-                );
+                let role_to_return = (role_to_edit.0.clone(), role_to_edit.1.clone(), None);
 
                 current_state.roles[(num - 1) as usize] = role_to_return;
 
@@ -907,7 +1008,7 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
     let mut sent_request = false;
 
     for user_tuple in current_state.roles.clone() {
-        if user_tuple.2 == String::from("none") {
+        if user_tuple.2.is_some() == false {
             sent_request = true;
 
             let mut user_name: String = String::from(&user_tuple.1.user.name);
@@ -939,8 +1040,11 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
             }
 
             content = format!(
-                "{}{}) {} is **{}**\n",
-                content, num, user_name, user_tuple.2
+                "{}{}) {} as the **{}**\n",
+                content,
+                num,
+                user_name,
+                user_tuple.2.as_ref().unwrap().name
             );
             num += 1;
         }
@@ -956,6 +1060,15 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
                 m
             })
             .await;
+
+        send_msg(
+            &msg,
+            &ctx,
+            String::from(
+                "Done setting up! Type \"edit\" to edit roles, or type \"dm\" to send roles out!",
+            ),
+        )
+        .await;
 
         current_state.game_state = GameState::SettingUp;
     }
