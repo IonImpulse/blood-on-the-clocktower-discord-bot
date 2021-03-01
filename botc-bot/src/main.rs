@@ -351,10 +351,19 @@ async fn main() {
     // Load game 1: Trouble Brewing
     let trouble_brewing =
         load_game(String::from("Trouble Brewing"), "games/trouble_brewing.csv").await;
+    // Load game 2: Trouble Brewing
+    let sects_and_violets =
+        load_game(String::from("Sects & Violets"), "games/sects_and_violets.csv").await;
+    // Load game 3: Trouble Brewing
+    let bad_moon_rising =
+        load_game(String::from("Bad Moon Rising"), "games/bad_moon_rising.csv").await;
+        
     // Start accesssing main database with lock
     let mut lock = BLOOD_DATABASE.lock().await;
 
     lock.games.push(trouble_brewing);
+    lock.games.push(sects_and_violets);
+    lock.games.push(bad_moon_rising);
 
     drop(lock);
     // Unlock main database
