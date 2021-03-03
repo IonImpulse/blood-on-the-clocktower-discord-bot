@@ -139,11 +139,11 @@ struct General;
 // Just for cosmetic purposes, but it does look very nice
 
 fn print_info(string: &str) {
-    println!("{}    | {}", "INFO".green().bold(), string.normal());
+    println!("{}    █ {}", "INFO".green().bold(), string.normal());
 }
 
 fn print_status(string: &str) {
-    println!("{}  | {}", "STATUS".cyan().bold(), string.normal());
+    println!("{}  █ {}", "STATUS".cyan().bold(), string.normal());
 }
 
 fn print_echo(msg: &Message) {
@@ -161,7 +161,7 @@ fn print_echo(msg: &Message) {
     }
 
     println!(
-        "{}    | {} : {}",
+        "{}    █ {} : {}",
         "ECHO".blue().bold(),
         author_name.bold(),
         message.normal()
@@ -170,7 +170,7 @@ fn print_echo(msg: &Message) {
 
 fn print_command(msg: &Message) {
     println!(
-        "{} | [{}] | {}#{}",
+        "{} █ [{}] █ {}#{}",
         "COMMAND".yellow().bold(),
         &msg.content.purple(),
         &msg.author.name,
@@ -179,7 +179,7 @@ fn print_command(msg: &Message) {
 }
 
 fn print_error(msg: &str) {
-    println!("{} | {}", "ERROR".red().bold(), msg);
+    println!("{}   █ {}", "ERROR".red().bold(), msg);
 }
 
 // Function to send a message to a channel safely
@@ -222,6 +222,7 @@ async fn load_game(game_name: String, path: &str) -> GameType {
             "DeathNight" => night_action = ActionTime::DeathNight,
             _ => night_action = ActionTime::NoNight,
         }
+
         temp_hashmap.insert(
             String::from(&name),
             Character::new(
@@ -357,7 +358,7 @@ async fn main() {
     // Load game 3: Trouble Brewing
     let bad_moon_rising =
         load_game(String::from("Bad Moon Rising"), "games/bad_moon_rising.csv").await;
-        
+
     // Start accesssing main database with lock
     let mut lock = BLOOD_DATABASE.lock().await;
 
@@ -763,7 +764,7 @@ async fn night(ctx: &Context, msg: &Message) {
 
         for character in characters.clone() {
             let character_role = character.2.as_ref().unwrap();
-            if character_role.first_order_index != -1 {
+            if character_role.order_index != -1 {
                 let warning: &str;
 
                 match character_role.night_action {
