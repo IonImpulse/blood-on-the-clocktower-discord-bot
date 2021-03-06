@@ -10,7 +10,7 @@ Mastermind,Minion,-1,-1,NoNight
 Tinker,Outsider,-1,15,VariableNight
 Moonchild,Outsider,-1,16,DeathNight
 Goon,Outsider,-1,-1,NoNight
-Lunatic,Outsider,0,5,EveryNight
+Lunatic,Decoy,0,5,EveryNight
 Grandmother,Townsfolk,6,17,EveryNight
 Sailor,Townsfolk,1,0,EveryNight
 Chambermaid,Townsfolk,7,18,EveryNight

@@ -20,7 +20,7 @@ use serenity::{
 
 use serenity::model::{channel::*, event::*, gateway::*, guild::*, id::*};
 
-use serenity_utils::{prompt::reaction_prompt, Error};
+use serenity_utils::prompt::reaction_prompt;
 
 use colored::*;
 
@@ -170,9 +170,10 @@ fn print_echo(msg: &Message) {
 
 fn print_command(msg: &Message) {
     println!(
-        "{} █ [{}] █ {}#{}",
+        "{} █ [{}] {} {}#{}",
         "COMMAND".yellow().bold(),
         &msg.content.purple(),
+        "by".yellow().italic(),
         &msg.author.name,
         &msg.author.discriminator
     );
@@ -200,6 +201,7 @@ async fn load_game(game_name: String, path: &str) -> GameType {
 
         let name = String::from(record.get(0).unwrap());
         let char_type: CharacterType;
+
         match record.get(1).unwrap() {
             "Demon" => char_type = CharacterType::Demon,
             "Minion" => char_type = CharacterType::Minion,
@@ -207,6 +209,7 @@ async fn load_game(game_name: String, path: &str) -> GameType {
             "Townsfolk" => char_type = CharacterType::Townsfolk,
             "Traveler" => char_type = CharacterType::Traveler,
             "Fabled" => char_type = CharacterType::Fabled,
+            "Decoy" => char_type = CharacterType::Decoy,
             _ => char_type = CharacterType::Other,
         }
         let first_order_index: i32 = record.get(2).unwrap().parse().unwrap();
@@ -353,8 +356,11 @@ async fn main() {
     let trouble_brewing =
         load_game(String::from("Trouble Brewing"), "games/trouble_brewing.csv").await;
     // Load game 2: Trouble Brewing
-    let sects_and_violets =
-        load_game(String::from("Sects & Violets"), "games/sects_and_violets.csv").await;
+    let sects_and_violets = load_game(
+        String::from("Sects & Violets"),
+        "games/sects_and_violets.csv",
+    )
+    .await;
     // Load game 3: Trouble Brewing
     let bad_moon_rising =
         load_game(String::from("Bad Moon Rising"), "games/bad_moon_rising.csv").await;
@@ -368,6 +374,8 @@ async fn main() {
 
     drop(lock);
     // Unlock main database
+
+    print_info("Loaded games!");
 
     print_info("Started!");
     // start listening for events by starting a single shard
@@ -602,9 +610,45 @@ async fn roles(ctx: &Context, msg: &Message) {
                 .await;
             }
         } else {
-            // Was a continuation, so assign the role to the last blank user
+            // Was a continuation, so assign the role to the last blank user OR last decoy user
             for index in 0..current_state.roles.len() {
-                if current_state.roles[index.clone()].2.as_ref().is_some() == false {
+                let temp_char_type: &str;
+
+                // Test if it's a real character
+                if current_state.roles[index.clone()].2.as_ref().is_some() {
+                    // If it is, is it a Decoy?
+                    if current_state.roles[index.clone()]
+                        .2
+                        .as_ref()
+                        .unwrap()
+                        .char_type_str
+                        == "Decoy"
+                    {
+                        // If it's a Decoy, is it full?
+                        if current_state.roles[index.clone()]
+                            .2
+                            .as_ref()
+                            .unwrap()
+                            .decoy_character
+                            .is_some()
+                        {
+                            // If it's full, make sure that we mark it as None
+                            temp_char_type = "None";
+                        } else {
+                            // Else, mark it as a Decoy character to be filled
+                            temp_char_type = "Decoy";
+                        }
+                    } else {
+                        // If ti's not a decoy, mark it as None
+                        temp_char_type = "None";
+                    }
+                } else {
+                    // If it's empty, mark it as Normal
+                    temp_char_type = "Normal";
+                }
+
+                // If it's either to be filled normally or as decoy, assign it a Character type
+                if temp_char_type == "Decoy" || temp_char_type == "Normal" {
                     let mut found_character: Option<Character> = None;
 
                     for character in current_state.game_type.get_all_characters() {
@@ -618,14 +662,42 @@ async fn roles(ctx: &Context, msg: &Message) {
                         }
                     }
 
-                    if let Some(_c_value) = found_character.clone() {
-                        current_state.roles[index.clone()].2 = found_character;
+                    if let Some(c_value) = found_character.clone() {
+                        if temp_char_type == "Decoy" {
+                            let real_char = current_state.roles[index.clone()].clone().2.unwrap();
 
-                        print_info(&format!(
-                            "User {} is role {}",
-                            current_state.roles[index.clone()].1.user.name,
-                            current_state.roles[index.clone()].2.as_ref().unwrap().name
-                        ));
+                            let decoy_char: DecoyCharacter = DecoyCharacter {
+                                name: c_value.name,
+                                alignment: c_value.alignment,
+                                char_type: c_value.char_type,
+                                char_type_str: c_value.char_type_str,
+                            };
+
+                            let char_to_assign: Character =
+                                Character::add_decoy(real_char, decoy_char);
+
+                            current_state.roles[index.clone()].2 = Some(char_to_assign);
+
+                            print_info(&format!(
+                                "User {}'s decoy role is the {}",
+                                current_state.roles[index.clone()].1.user.name,
+                                current_state.roles[index.clone()]
+                                    .2
+                                    .as_ref()
+                                    .unwrap()
+                                    .decoy_character
+                                    .as_ref()
+                                    .unwrap()
+                                    .name
+                            ));
+                        } else {
+                            current_state.roles[index.clone()].2 = found_character;
+                            print_info(&format!(
+                                "User {} is role {}",
+                                current_state.roles[index.clone()].1.user.name,
+                                current_state.roles[index.clone()].2.as_ref().unwrap().name
+                            ));
+                        }
                     } else {
                         let content = format!(
                             "Could not find role {} in current game. Please try again!",
@@ -658,11 +730,20 @@ async fn dm_roles(ctx: &Context, msg: &Message) {
         let mut successful_dms: u32 = 0;
 
         for member in &current_state.roles {
-            let message_to_send: String = format!(
-                "Your role this game is the **{}**, a **{}**. Don't tell anyone!",
-                &member.2.as_ref().unwrap().name,
-                &member.2.as_ref().unwrap().char_type_str,
-            );
+            let message_to_send: String;
+
+            if let Some(value) = &member.2.as_ref().unwrap().decoy_character {
+                message_to_send = format!(
+                    "Your role this game is the **{}**, a **{}**. Don't tell anyone!",
+                    &value.name, &value.char_type_str,
+                );
+            } else {
+                message_to_send = format!(
+                    "Your role this game is the **{}**, a **{}**. Don't tell anyone!",
+                    &member.2.as_ref().unwrap().name,
+                    &member.2.as_ref().unwrap().char_type_str,
+                );
+            }
 
             let result = &member
                 .1
@@ -1031,6 +1112,25 @@ async fn ask_for_role(ctx: &Context, msg: &Message, mut current_state: BloodGuil
                 &msg,
                 &ctx,
                 String::from(format!("**Enter role** for *{}*", user_name)),
+            )
+            .await;
+
+            break;
+        } else if &user_tuple.2.clone().unwrap().char_type_str == "Decoy"
+            && &user_tuple.2.clone().unwrap().decoy_character.is_some() == &false
+        {
+            sent_request = true;
+
+            let mut user_name: String = String::from(&user_tuple.1.user.name);
+
+            if let Some(value) = &user_tuple.1.nick {
+                user_name = value.clone();
+            }
+
+            send_msg(
+                &msg,
+                &ctx,
+                String::from(format!("**Enter decoy role** for *{}*", user_name)),
             )
             .await;
 

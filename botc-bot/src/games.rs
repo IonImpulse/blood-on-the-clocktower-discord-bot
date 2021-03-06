@@ -39,6 +39,7 @@ pub enum CharacterType {
     Traveler,
     Fabled,
     Other,
+    Decoy,
 }
 
 impl CharacterType {
@@ -51,6 +52,7 @@ impl CharacterType {
         CharacterType::Traveler => return "Traveler",
         CharacterType::Fabled => return "Fabled",
         CharacterType::Other => return "Other",
+        CharacterType::Decoy => return "Decoy"
        }
     }
 }
@@ -58,12 +60,21 @@ impl CharacterType {
 #[derive(Clone)]
 pub struct Character {
     pub name: String,
-    alignment: Alignment,
-    char_type: CharacterType,
+    pub alignment: Alignment,
+    pub char_type: CharacterType,
     pub char_type_str: String,
     pub first_order_index: i32,
     pub order_index: i32,
     pub night_action: ActionTime,
+    pub decoy_character: Option<DecoyCharacter>,
+}
+
+#[derive(Clone)]
+pub struct DecoyCharacter {
+    pub name: String,
+    pub alignment: Alignment,
+    pub char_type: CharacterType,
+    pub char_type_str: String,
 }
 
 impl Character {
@@ -93,12 +104,26 @@ impl Character {
             first_order_index: first_order_index,
             order_index: order_index,
             night_action: night_action,
+            decoy_character: None,
         }
     }
     
+    pub fn add_decoy(character: Character, decoy: DecoyCharacter) -> Character {
+        Character {
+            name: character.name,
+            alignment: character.alignment,
+            char_type: character.char_type,
+            char_type_str: character.char_type_str,
+            first_order_index: character.first_order_index,
+            order_index: character.order_index,
+            night_action: character.night_action,
+            decoy_character: Some(decoy),
+        }
+    }
     pub fn get_string(&self) -> String {
         return format!("{: <18}| {: <15}| {: <25}", self.name, self.char_type.as_str(), self.night_action.as_str())
     }
+
 }
 
 #[derive(Clone)]
