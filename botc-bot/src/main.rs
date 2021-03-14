@@ -734,12 +734,12 @@ async fn dm_roles(ctx: &Context, msg: &Message) {
 
             if let Some(value) = &member.2.as_ref().unwrap().decoy_character {
                 message_to_send = format!(
-                    "Your role this game is the **{}**, a **{}**. Don't tell anyone!",
+                    "Your role this game is the **{}**, a **{}**.",
                     &value.name, &value.char_type_str,
                 );
             } else {
                 message_to_send = format!(
-                    "Your role this game is the **{}**, a **{}**. Don't tell anyone!",
+                    "Your role this game is the **{}**, a **{}**.",
                     &member.2.as_ref().unwrap().name,
                     &member.2.as_ref().unwrap().char_type_str,
                 );
