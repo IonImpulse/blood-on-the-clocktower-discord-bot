@@ -2,28 +2,20 @@ mod banners;
 mod games;
 
 use games::*;
-
 use std::{collections::*, env, sync::Arc};
-
 use tokio::sync::Mutex;
-
 use lazy_static::lazy_static;
-
-use serenity::framework::standard::{
+use serenity::{framework::standard::{
     macros::{command, group},
     CommandResult, StandardFramework,
-};
-
+}, model::prelude::EmojiIdentifier};
 use serenity::{
-    async_trait, client::bridge::gateway::ShardManager, client::*, http::Http, prelude::*,
+    async_trait, client::bridge::gateway::ShardManager, client::*, prelude::*,
 };
-
 use serenity::model::{channel::*, event::*, gateway::*, guild::*, id::*};
-
 use serenity_utils::prompt::reaction_prompt;
 
 use colored::*;
-
 use csv::Reader;
 
 pub struct ShardManagerContainer;
@@ -352,30 +344,24 @@ async fn main() {
 
     print_status("Loading games...");
 
-    // Load game 1: Trouble Brewing
-    let trouble_brewing =
-        load_game(String::from("Trouble Brewing"), "games/trouble_brewing.csv").await;
-    // Load game 2: Trouble Brewing
-    let sects_and_violets = load_game(
-        String::from("Sects & Violets"),
-        "games/sects_and_violets.csv",
-    )
-    .await;
-    // Load game 3: Trouble Brewing
-    let bad_moon_rising =
-        load_game(String::from("Bad Moon Rising"), "games/bad_moon_rising.csv").await;
+    // Loop through 'games' folder and load all games
+    // where the name is the filename without .csv
 
-    // Start accesssing main database with lock
-    let mut lock = BLOOD_DATABASE.lock().await;
+    for entry in std::fs::read_dir("games").unwrap() {
+        let entry = entry.unwrap();
+        let path = entry.path();
+        let file_name = path.file_name().unwrap().to_str().unwrap();
+        let game_name = file_name.split('.').collect::<Vec<&str>>()[0];
+        let game_type = load_game(String::from(game_name), path.to_str().unwrap()).await;
 
-    lock.games.push(trouble_brewing);
-    lock.games.push(sects_and_violets);
-    lock.games.push(bad_moon_rising);
+        // Lock and unlock the database to add the game
+        BLOOD_DATABASE.lock().await.games.push(game_type);
+    }
 
-    drop(lock);
-    // Unlock main database
-
-    print_info("Loaded games!");
+    print_info("Loaded games:");
+    for game in &BLOOD_DATABASE.lock().await.games {
+        print_info(&format!(" - {}", game.get_name()));
+    }
 
     print_info("Started!");
     // start listening for events by starting a single shard
@@ -403,13 +389,100 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
 
             send_msg(&msg, &ctx, content).await;
 
-            // Ask what game edition to play with serenity-utils
-
-            let emojis = [
-                ReactionType::from('🔴'),
-                ReactionType::from('🛐'),
-                ReactionType::from('🌙'),
+            let emojis_list = vec![
+                '❤',
+                '🧡',
+                '💛',
+                '💚',
+                '💙',
+                '💜',
+                '🖤',
+                '🤍',
+                '🤎',
+                '💖',
+                '💗',
+                '💓',
+                '💞',
+                '💘',
+                '💝',
+                '🩸',
+                '🦇',
+                '🔪',
+                '🧛',
+                '🧟',
+                '🧙',
+                '🧚',
+                '🧜',
+                '🧞',
+                '👻',
+                '👽',
+                '👾',
+                '🤖',
+                '🎃',
+                '👹',
+                '👺',
+                '🤡',
+                '👿',
+                '💩',
+                '🤠',
+                '👻',
+                '👽',
+                '👾',
+                '🤖',
+                '🎃',
+                '👹',
+                '👺',
+                '🤡',
+                '👿',
+                '💩',
+                '🤠',
+                '👻',
+                '👽',
+                '👾',
+                '🤖',
+                '🎃',
+                '👹',
+                '👺',
+                '🤡',
+                '👿',
+                '💩',
+                '🤠',
+                '👻',
+                '👽',
+                '👾',
+                '🤖',
+                '🎃',
+                '👹',
+                '👺',
+                '🤡',
+                '👿',
+                '💩',
+                '🤠',
+                '👻',
+                '👽',
+                '👾',
+                '🤖',
+                '🎃',
+                '👹',
+                '👺',
+                '🤡',
+                '👿',
+                '💩',
+                '🤠',
             ];
+
+            // Ask what game edition to play with serenity-utils
+            let mut emojis = Vec::new();
+            let mut desc = String::new();
+
+            let mut i = 0;
+            for game in &BLOOD_DATABASE.lock().await.games {
+                emojis.push(ReactionType::from(emojis_list[i]));
+
+                desc = format!("{}\n\n{}: {}", desc, emojis_list[i], game.get_name());
+
+                i += 1;
+            }
 
             let prompt_msg = msg
                 .channel_id
@@ -417,7 +490,7 @@ async fn start(ctx: &Context, msg: &Message) -> CommandResult {
                     m.embed(|mut e| {
                         e.title("Select Game Type:");
                         e.description(
-                            "🔴 Trouble Brewing\n\n🛐 Sects & Violets\n\n🌙 Bad Moon Rising",
+                            desc
                         );
                         e
                     });

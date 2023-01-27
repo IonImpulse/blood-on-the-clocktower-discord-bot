@@ -156,4 +156,8 @@ impl GameType {
 
         return char_list
     }
+
+    pub fn get_name(&self) -> String {
+        return self.name.clone()
+    }
 }
