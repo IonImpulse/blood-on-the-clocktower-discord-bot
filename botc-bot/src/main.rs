@@ -941,10 +941,16 @@ async fn night(ctx: &Context, msg: &Message) {
             let character_role = character.2.as_ref().unwrap();
 
             if character_role.first_order_index != -1 {
+                // Try to find a user.nick_in(), but if it doesn't exist, use user.name
+                let name = match character.1.user.nick_in(&ctx, *guild_id).await {
+                    Some(value) => value,
+                    None => character.1.user.name.clone(),
+                };
+
                 content.push_str(
                     format!(
                         "{}) **{}** as the {}\n",
-                        index, character.1.user.name, character_role.name
+                        index, name, character_role.name
                     )
                     .as_str(),
                 );
@@ -969,11 +975,16 @@ async fn night(ctx: &Context, msg: &Message) {
                     ActionTime::DeathNight => warning = " *if triggered*",
                     _ => warning = "",
                 }
+                
+                let name = match character.1.user.nick_in(&ctx, *guild_id).await {
+                    Some(value) => value,
+                    None => character.1.user.name.clone(),
+                };
 
                 content.push_str(
                     format!(
                         "{}) **{}** as the {}{}\n",
-                        index, character.1.user.name, character_role.name, warning,
+                        index, name, character_role.name, warning,
                     )
                     .as_str(),
                 );
