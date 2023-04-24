@@ -49,6 +49,9 @@ Now you can send the following commands without a prefix in that channel to cont
 ### save
 >Saves the ordering of people in night rooms without moving them.
 
+## ~help
+>Displays a help message
+
 Then, use the command **~end** to end the game. This will clear all data, including which channel is bound, which roles players have, and how many nights have passed.
 
 
