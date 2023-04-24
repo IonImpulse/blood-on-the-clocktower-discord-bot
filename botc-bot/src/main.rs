@@ -622,6 +622,9 @@ Then, use the command ~end to end the game. This will clear all data, including 
 
 Questions/Comments:
 Please contact @IonImpulse#1190 on Discord. Or, email me at edv121@outlook.com
+
+Privacy Policy:
+https://raw.githubusercontent.com/IonImpulse/blood-on-the-clocktower-discord-bot/main/legal/privacy-policy.md
 ```";
 
     send_msg(&msg, &ctx, String::from(help_msg)).await;
