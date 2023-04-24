@@ -124,7 +124,7 @@ impl EventHandler for Handler {
 }
 
 #[group]
-#[commands(start, end)]
+#[commands(start, end, help)]
 struct General;
 
 // Different coloured print functions
@@ -583,7 +583,49 @@ async fn end(ctx: &Context, msg: &Message) -> CommandResult {
 }
 
 #[command]
-async fn help(_ctx: &Context, _msg: &Message) -> CommandResult {
+async fn help(ctx: &Context, msg: &Message) -> CommandResult {
+    // Return a message with all the commands
+    print_command(&msg);
+
+    let help_msg = "```markdown
+Use the command ~start to start a game.
+
+Blood 🩸 will be bound to the channel that ~start was executed in, so for the duration of the game, you won't need to use the ~ prefix to execute commands.
+Ex: Someone with a \"Storytellers\" role sends the message \"~start\" in a channel that only storytellers can see. Blood will respond with a confirmation, and will now respond to commands in that channel without needing to use the prefix ~.
+
+Now you can send the following commands without a prefix in that channel to continue the flow of the game:
+roles
+
+    Starts a call/response to save the role of every player in the Voice Channel who is not the storyteller. Once done, you can type dm and start the game!.
+
+edit [number]
+
+    Will edit the role of the specified number!
+
+dm
+
+    Will DM all saved roles to each player. If there are no roles set for the session, this command will fail. If there are some players who have roles and some who don't, this command will fail.
+
+night
+
+    Moves everyone but the storyteller who executed the command (who is also in the Voice Channel the storyteller is in) to a night room. If there is a saved ordering of people, it will use that order.
+
+day
+
+    Saves the ordering of people in night rooms and moves everyone to the Voice Channel with \"town\" in the name.
+
+save
+
+    Saves the ordering of people in night rooms without moving them.
+
+Then, use the command ~end to end the game. This will clear all data, including which channel is bound, which roles players have, and how many nights have passed.
+
+Questions/Comments:
+Please contact @IonImpulse#1190 on Discord. Or, email me at edv121@outlook.com
+```";
+
+    send_msg(&msg, &ctx, String::from(help_msg)).await;
+
     Ok(())
 }
 
